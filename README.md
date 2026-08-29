@@ -143,77 +143,102 @@ $$\hat{A}_{i} = \frac{\mathcal{R}_{\text{total}}(y_i, y'_i) - \mu_{\mathcal{R}}}
 
 ---
 
-## 📁 Repository Structure
+## 🏛️ Clean Architecture Design & Repository Layout
+
+This project follows **Clean Architecture** principles to separate core scientific domain models from external frameworks and persistence layers:
+
+```
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                   PRESENTATION & ENTRY POINTS                           │
+ │     • scripts/run_stage*.py (CLI)     • notebooks/nb_*.ipynb            │
+ └────────────────────────────────────┬────────────────────────────────────┘
+                                      │
+                                      ▼
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                   APPLICATION SERVICES (Use Cases)                      │
+ │     • DataService                     • EvaluationService               │
+ │     • AnalysisService                 • Training Orchestrators          │
+ └────────────────────────────────────┬────────────────────────────────────┘
+                                      │
+                                      ▼
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                   DOMAIN CORE (Entities & Protocols)                    │
+ │     • BenchmarkTask                   • ExecutionResult                 │
+ │     • LevelEvaluationReport           • ErrorCategory                   │
+ │     • ICodeExecutor (Protocol)        • IModelRunner (Protocol)         │
+ └────────────────────────────────────▲────────────────────────────────────┘
+                                      │ (implements)
+ ┌────────────────────────────────────┴────────────────────────────────────┐
+ │                   INFRASTRUCTURE (External Adapters)                    │
+ │     • MultiprocessSandbox             • HuggingFaceBenchmarkLoader      │
+ │     • QuantizedModelRunner (4-bit)    • RuleBasedErrorClassifier        │
+ │     • Atomic Persistence (JSONL)      • Config Parser                   │
+ └─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Detailed Repository Directory Tree
 
 ```
 reduction-ladder-for-code/
 │
-├── config.yaml                        # Single source of truth for all hyperparameters
-├── proposal/                          # LaTeX proposal for Dr. Ghada (Orange Innovation)
-│   ├── proposal.tex
-│   └── references.bib
+├── config.yaml                            # Global single source of truth for all hyperparameters
+├── requirements.txt                       # Locked dependencies with exact versions
+├── README.md                              # Main project documentation & quickstart
+├── ARCHITECTURE.md                        # Software architecture & team collaboration blueprint
+├── implementation_plan.md                 # Exhaustive stage-by-stage implementation plan
+│
+├── proposal/                              # Formal LaTeX research proposal for Dr. Ghada
+│   ├── proposal.tex                       # 13-page technical proposal (Orange branding)
+│   └── references.bib                     # 18 curated academic references
 │
 ├── data/
-│   ├── ladder/                        # Loaded & normalized L0–L5 benchmarks
-│   │   ├── L0_humaneval.jsonl
-│   │   ├── L1_subtle.jsonl
-│   │   ├── L2_verbose.jsonl
-│   │   ├── L3_creative.jsonl
-│   │   ├── L4_difficult.jsonl
-│   │   └── L5_combine.jsonl
-│   ├── distillation/                  # High-quality CoT traces for SFT
-│   └── livecode_bench/               # Contamination-free control set
+│   ├── ladder/                            # Standardized JSONL benchmark datasets (L0-L5)
+│   ├── distillation/                      # Filtered Chain-of-Thought training corpora
+│   └── livecode_bench/                    # Contamination-free temporal control tasks
 │
 ├── src/
-│   ├── data_pipeline/
-│   │   ├── loader.py                  # HuggingFace benchmark loader & schema normalizer
-│   │   └── verifier.py                # Unit-test sandbox verification runner
-│   ├── evaluation/
-│   │   ├── harness.py                 # Main evaluation loop (pass@1, pass@5)
-│   │   ├── sandbox.py                 # Isolated subprocess code execution
-│   │   ├── classifier.py              # Error taxonomy: on-path / off-path / wrong-template
-│   │   └── consistency.py             # Surface perturbation consistency checker
-│   ├── distillation/
-│   │   └── dataset_builder.py         # SFT corpus formatter (CoT traces)
-│   ├── training/
-│   │   ├── qlora_finetune.py          # Standard QLoRA SFT
-│   │   ├── contrastive_sft.py         # Priority 2: Contrastive Thought-Template SFT
-│   │   ├── grpo_rlvr.py               # Standard Vanilla GRPO
-│   │   ├── ast_rl.py                  # Priority 3: AST-Guided Policy Optimization
-│   │   └── inv_grpo.py                # Priority 1: Novel Inv-GRPO training loop
-│   └── analysis/
-│       ├── metrics.py                 # Aggregate metrics (Ladder AUC, Collapse Point, MRI)
-│       └── plots.py                   # Publication-quality visualization functions
+│   ├── core/                              # Layer 1: Domain Core (Zero external ML dependencies)
+│   │   ├── entities.py                    # BenchmarkTask, ExecutionResult, LevelEvaluationReport, ErrorCategory
+│   │   ├── interfaces.py                  # Protocols: ICodeExecutor, IBenchmarkLoader, IModelRunner, IErrorClassifier
+│   │   └── exceptions.py                  # Domain Exceptions (SandboxTimeoutError, VRAMExceededError)
+│   │
+│   ├── infrastructure/                    # Layer 2: External Adapters & IO
+│   │   ├── sandbox.py                     # MultiprocessSandbox (Process isolation, timeout guarding)
+│   │   ├── hf_loader.py                   # HuggingFaceBenchmarkLoader (Dataset fetching & disk caching)
+│   │   ├── model_loader.py                # QuantizedModelRunner (4-bit NF4 BitsAndBytes + LoRA inference)
+│   │   ├── classifier.py                  # RuleBasedErrorClassifier (Failure taxonomy heuristics)
+│   │   └── persistence.py                 # Atomic JSONL/JSON/YAML persistence
+│   │
+│   └── services/                          # Layer 3: Application Services (Use-Case Orchestrators)
+│       ├── data_service.py                # Benchmark ingestion & ground-truth verification
+│       ├── evaluation_service.py          # Pass@1, Pass@5 evaluation loop & error diagnosis
+│       ├── analysis_service.py            # Ladder AUC, Collapse Point, MRI calculation & publication plots
+│       └── training/                      # Training Use Cases (QLoRA, Contrastive SFT, Inv-GRPO)
+│           ├── qlora_trainer.py           # SFT trainer orchestrator
+│           └── inv_grpo_trainer.py        # Paired invariance RL trainer orchestrator
 │
-├── scripts/
-│   ├── run_stage1_data.py
-│   ├── run_stage2_eval.py
-│   ├── run_stage3_distill_data.py
-│   ├── run_stage4_qlora.py
-│   ├── run_stage4_contrastive_sft.py
-│   ├── run_stage5_rlvr.py
-│   ├── run_stage5_ast_rl.py
-│   ├── run_stage5_inv_grpo.py
-│   └── run_stage6_analysis.py
+├── notebooks/                             # Layer 4: Interactive Notebooks
+│   ├── nb_01_data_pipeline.ipynb          # Stage 1: Data ingestion & validation
+│   ├── nb_02_baseline_eval.ipynb          # Stage 2: Baseline (M1) un-tuned model evaluation
+│   ├── nb_03_qlora_training.ipynb         # Stage 4: SFT training (M2 Vanilla vs M3 Contrastive)
+│   ├── nb_04_rlvr_training.ipynb          # Stage 5: RL training (M4 GRPO vs M5 AST vs M6 Inv-GRPO)
+│   └── nb_05_comparison.ipynb            # Stage 6: Comparative multi-model analysis & figures
 │
-├── results/
-│   ├── baseline/
-│   ├── distilled_vanilla/
-│   ├── distilled_contrastive/
-│   ├── rlvr_vanilla/
-│   ├── rlvr_ast/
-│   └── rlvr_inv_grpo/
+├── scripts/                               # Layer 4: CLI Entry Points
+│   ├── run_stage1_data.py                 # CLI for Stage 1 data pipeline
+│   ├── run_stage2_eval.py                 # CLI for Stage 2 baseline eval
+│   ├── run_stage3_distill_data.py         # CLI for Stage 3 SFT corpus generation
+│   ├── run_stage4_qlora.py                # CLI for Stage 4 SFT training
+│   ├── run_stage5_rlvr.py                 # CLI for Stage 5 RL training
+│   └── run_stage6_analysis.py             # CLI for Stage 6 comparative analysis
 │
-├── checkpoints/
-├── notebooks/
-│   ├── nb_01_data_pipeline.ipynb      # Stage 1: Benchmark loading & validation
-│   ├── nb_02_baseline_eval.ipynb      # Stage 2: Baseline model evaluation
-│   ├── nb_03_qlora_training.ipynb     # Stage 4: SFT Arms (Vanilla vs Contrastive)
-│   ├── nb_04_rlvr_training.ipynb      # Stage 5: RL Arms (GRPO vs AST-RL vs Inv-GRPO)
-│   └── nb_05_comparison.ipynb        # Stage 6: Multi-arm comparative analysis & mitigation proof
-│
-├── requirements.txt
-└── README.md
+└── results/                               # Structured output evaluation reports & figures
+    ├── baseline/
+    ├── distilled_vanilla/
+    ├── distilled_contrastive/
+    ├── rlvr_vanilla/
+    ├── rlvr_ast/
+    └── rlvr_inv_grpo/
 ```
 
 ---
