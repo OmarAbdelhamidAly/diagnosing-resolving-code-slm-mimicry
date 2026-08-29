@@ -1,0 +1,56 @@
+# =====================================================================
+# Reduction Ladder for Code & Multi-Arm Mitigation
+# Configuration File — Single Source of Truth
+# Orange Innovation Labs
+# =====================================================================
+
+project:
+  name: "reduction-ladder-for-code"
+  authors: ["Omar Abdelhamid", "Nour Walid"]
+  supervisor: "Dr. Ghada"
+  institution: "Orange Innovation Labs"
+  seed: 42
+
+models:
+  student_model: "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+  quantization: "4bit_nf4"
+  max_seq_len: 2048
+
+benchmarks:
+  l0_humaneval: "openai/openai_humaneval"
+  l1_subtle: "evoeval/EvoEval_subtle"
+  l2_verbose: "evoeval/EvoEval_verbose"
+  l3_creative: "evoeval/EvoEval_creative"
+  l4_difficult: "evoeval/EvoEval_difficult"
+  l5_combine: "evoeval/EvoEval_combine"
+  control_lcb: "livecodebench/code_generation_lite"
+
+evaluation:
+  pass_k: [1, 5]
+  temperature_greedy: 0.0
+  temperature_sample: 0.8
+  num_samples: 5
+  timeout_seconds: 10.0
+
+qlora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+  learning_rate: 2.0e-4
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  epochs: 3
+  warmup_ratio: 0.03
+  output_dir: "checkpoints/qlora_adapter"
+
+inv_grpo:
+  group_size: 4
+  kl_coef: 0.1
+  lambda_consistency: 0.5
+  gamma_template_penalty: 0.5
+  training_steps: 1000
+  eval_every_steps: 100
+  batch_size: 1
+  learning_rate: 1.0e-5
+  output_dir: "checkpoints/inv_grpo_final"
