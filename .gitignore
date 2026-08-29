@@ -41,6 +41,12 @@ checkpoints/
 *.pth
 hf_cache/
 
+# Datasets & large JSONL files (re-generated via scripts/run_stage1_data.py)
+data/ladder/*.jsonl
+data/distillation/*.jsonl
+!data/ladder/.gitkeep
+!data/distillation/.gitkeep
+
 # Output Results & logs
 results/**/*.raw.jsonl
 *.log
