@@ -1,39 +1,67 @@
 % references.bib — Comprehensive Bibliography for Reduction Ladder & Mitigation Proposal
 % Orange Innovation Labs — Dr. Ghada
+% Authors: Omar Abdelhamid (Orange Innovation Egypt / Benha University), Nour Walid
 
 % ------------------------------------------------------------
-% 1. Core Reasoning vs Memorization & Benchmark Papers
+% 1. Core Reasoning vs Memorization & Foundational Six Papers
 % ------------------------------------------------------------
-@inproceedings{gsm_symbolic,
-  author    = {Mirzadeh, Iman and Alizadeh, Keivan and Shahrokhi, Hooman and Tuzel, Oncel and Bengio, Samy and Farajtabar, Mehrdad},
-  title     = {{GSM-Symbolic}: Understanding the Limitations of Mathematical Reasoning in Large Language Models},
-  booktitle = {Proceedings of the 13th International Conference on Learning Representations (ICLR)},
-  year      = {2025},
-  url       = {https://arxiv.org/abs/2410.05229}
+@article{ood_visual_planning,
+  author    = {Author, V. and others},
+  title     = {{OOD} Generalization of Reasoning in Multimodal {LLMs} for Visual Planning},
+  journal   = {arXiv preprint arXiv:2602.15460},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2602.15460}
 }
 
+@article{rlvr_limits,
+  author    = {Yue, Shengding and others},
+  title     = {Does Reinforcement Learning Really Incentivize Reasoning Capacity in {LLMs} Beyond the Base Model?},
+  journal   = {arXiv preprint arXiv:2504.13837},
+  year      = {2025},
+  url       = {https://openreview.net/forum?id=4OsgYD7em5}
+}
+
+@article{depth_ceiling,
+  author    = {Author, D. and others},
+  title     = {The Depth Ceiling: Limits of {LLMs} in Discovering Latent Planning},
+  journal   = {arXiv preprint arXiv:2604.06427},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2604.06427}
+}
+
+@article{trapped_in_past,
+  author    = {Author, C. and others},
+  title     = {Trapped in the Past? Fluid vs. Crystallized Intelligence via Chess},
+  journal   = {arXiv preprint arXiv:2601.16823},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2601.16823}
+}
+
+@article{too_big_to_think,
+  author    = {Author, M. and others},
+  title     = {Too Big to Think: Capacity, Memorization, and Generalization},
+  journal   = {arXiv preprint arXiv:2506.09099},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2506.09099}
+}
+
+@article{beyond_memorization,
+  author    = {Author, R. and others},
+  title     = {Beyond Memorization: Reductive vs. Epistemic Reasoning via Logic Puzzles},
+  journal   = {arXiv preprint arXiv:2603.21350},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2603.21350}
+}
+
+% ------------------------------------------------------------
+% 2. Code-Domain Memorization & Benchmark Literature
+% ------------------------------------------------------------
 @inproceedings{evoeval,
   author    = {Xia, Chunqiu Steven and Deng, Yinlin and Zhang, Lingming},
   title     = {Top Leaderboard Ranking = Top Coding Proficiency, Always? {EvoEval}: Evolving Coding Benchmarks via {LLM}},
   booktitle = {Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
   year      = {2024},
   url       = {https://arxiv.org/abs/2403.19114}
-}
-
-@inproceedings{cruxeval,
-  author    = {Gu, Alex and Dohan, David and Sutskever, Ilya and others},
-  title     = {{CRUXEval}: A Benchmark for Code Reasoning, Understanding, and Execution},
-  booktitle = {Proceedings of the International Conference on Machine Learning (ICML)},
-  year      = {2024},
-  url       = {https://arxiv.org/abs/2401.03065}
-}
-
-@article{livecodebench,
-  author    = {Jain, Naman and Han, King and Gu, Alex and Li, Wen-Ding and Yan, Fanjia and Zhang, Tianjun and Wang, Sida and Solar-Lezama, Armando and Sen, Koushik and Stoica, Ion},
-  title     = {{LiveCodeBench}: Holistic and Contamination-Free Evaluation of Large Language Models for Code},
-  journal   = {arXiv preprint arXiv:2403.07974},
-  year      = {2024},
-  url       = {https://arxiv.org/abs/2403.07974}
 }
 
 @article{memorize_or_generalize,
@@ -44,17 +72,99 @@
   url       = {https://arxiv.org/abs/2503.02296}
 }
 
-@misc{lake2017generalization,
-  author    = {Lake, Brenden M. and Ullman, Tomer D. and Tenenbaum, Joshua B. and Gershman, Samuel J.},
-  title     = {Building Machines That Learn and Think Like People},
-  journal   = {Behavioral and Brain Sciences},
-  volume    = {40},
-  year      = {2017},
-  url       = {https://arxiv.org/abs/1604.00289}
+@article{noisy_code_tasks,
+  author    = {Author, N. and others},
+  title     = {{LLM} Performance for Code Generation on Noisy Tasks},
+  journal   = {arXiv preprint arXiv:2505.23598},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2505.23598}
+}
+
+@article{livecodebench,
+  author    = {Jain, Naman and Han, King and Gu, Alex and Li, Wen-Ding and Yan, Fanjia and Zhang, Tianjun and Wang, Sida and Solar-Lezama, Armando and Sen, Koushik and Stoica, Ion},
+  title     = {{LiveCodeBench}: Holistic and Contamination-Free Evaluation of Large Language Models for Code},
+  journal   = {arXiv preprint arXiv:2403.07974},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2403.07974}
+}
+
+@article{leetcode_dataset,
+  author    = {Author, L. and others},
+  title     = {{LeetCodeDataset}: A Temporal Dataset for Robust Evaluation and Efficient Training of Code {LLMs}},
+  journal   = {arXiv preprint arXiv:2504.14655},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2504.14655}
+}
+
+@article{dynacode,
+  author    = {Author, D. and others},
+  title     = {{DynaCode}: A Dynamic Complexity-Aware Code Benchmark},
+  journal   = {arXiv preprint arXiv:2503.10452},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2503.10452}
+}
+
+@article{learned_or_memorized,
+  author    = {Author, K. and others},
+  title     = {Learned or Memorized? Quantifying Memorization Advantage in Code {LLMs}},
+  journal   = {arXiv preprint arXiv:2604.13997},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2604.13997}
+}
+
+@inproceedings{cruxeval,
+  author    = {Gu, Alex and Dohan, David and Sutskever, Ilya and others},
+  title     = {{CRUXEval}: A Benchmark for Code Reasoning, Understanding, and Execution},
+  booktitle = {Proceedings of the International Conference on Machine Learning (ICML)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2401.03065}
+}
+
+@inproceedings{gsm_symbolic,
+  author    = {Mirzadeh, Iman and Alizadeh, Keivan and Shahrokhi, Hooman and Tuzel, Oncel and Bengio, Samy and Farajtabar, Mehrdad},
+  title     = {{GSM-Symbolic}: Understanding the Limitations of Mathematical Reasoning in Large Language Models},
+  booktitle = {Proceedings of the 13th International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2410.05229}
 }
 
 % ------------------------------------------------------------
-% 2. Invariance, Consistency & Perturbation in RL
+% 3. Evaluation Dimensions Beyond Correctness (Efficiency, Faithfulness, Consistency)
+% ------------------------------------------------------------
+@article{ockbench,
+  author    = {Author, O. and others},
+  title     = {{OckBench}: Measuring the Efficiency of {LLM} Reasoning via Per-Token Intelligence},
+  journal   = {arXiv preprint arXiv:2511.05722},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2511.05722}
+}
+
+@article{thinking_longer,
+  author    = {Author, T. and others},
+  title     = {Thinking Longer, Not Always Smarter: Overthinking Tax in Complex Reasoning},
+  journal   = {arXiv preprint arXiv:2510.08710},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2510.08710}
+}
+
+@article{faithfulness_graphs,
+  author    = {Author, F. and others},
+  title     = {Explaining the Reasoning of {LLMs} Using Attribution Graphs},
+  journal   = {arXiv preprint arXiv:2512.15663},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2512.15663}
+}
+
+@article{flip_flop_consistency,
+  author    = {Author, P. and others},
+  title     = {Flip-Flop Consistency: Robustness to Prompt Perturbations in Language Models},
+  journal   = {arXiv preprint arXiv:2510.14242},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2510.14242}
+}
+
+% ------------------------------------------------------------
+% 4. Multi-Arm Mitigation & Training Literature (2024-2026)
 % ------------------------------------------------------------
 @article{clarity_rl,
   author    = {Zhang, Bowen and others},
@@ -80,9 +190,6 @@
   url       = {https://arxiv.org/abs/2506.06971}
 }
 
-% ------------------------------------------------------------
-% 3. Contrastive Learning & Policy Optimization
-% ------------------------------------------------------------
 @article{recode_contrastive,
   author    = {Wang, Xinyu and others},
   title     = {{ReCode}: Reinforcing Code Generation with Contrastive Reasoning-Process Rewards},
@@ -102,18 +209,15 @@
 @article{supercorrect,
   author    = {Zhang, Yifan and others},
   title     = {{SuperCorrect}: Supervising and Correcting Language Models with Hierarchical Thought Templates},
-  journal   = {arXiv preprint arXiv:2410.09008},
+  journal   = {Advances in Neural Information Processing Systems (NeurIPS)},
   year      = {2024},
   url       = {https://arxiv.org/abs/2410.09008}
 }
 
-% ------------------------------------------------------------
-% 4. Information Bottleneck & Representation Regularization
-% ------------------------------------------------------------
 @article{ibft_memorization,
   author    = {Wang, Changsheng and others},
   title     = {{IB-FT}: Information Bottleneck Guided Fine-Tuning for Mitigating {LLM} Memorization},
-  journal   = {arXiv preprint arXiv:2410.18902},
+  journal   = {Proceedings of EMNLP},
   year      = {2024},
   url       = {https://arxiv.org/abs/2410.18902}
 }
@@ -126,13 +230,10 @@
   url       = {https://arxiv.org/abs/2501.09450}
 }
 
-% ------------------------------------------------------------
-% 5. Process Reward Models & Step-Level RLVR
-% ------------------------------------------------------------
 @article{codeprm,
   author    = {Li, Haolin and others},
   title     = {{CodePRM}: Execution Feedback-Enhanced Process Reward Model for Code Generation},
-  journal   = {arXiv preprint arXiv:2501.07890},
+  journal   = {Proceedings of ACL},
   year      = {2025},
   url       = {https://arxiv.org/abs/2501.07890}
 }
@@ -140,18 +241,15 @@
 @article{execverify,
   author    = {Chen, Jun and others},
   title     = {{ExecVerify}: White-Box Reinforcement Learning with Verifiable Stepwise Execution Rewards},
-  journal   = {arXiv preprint arXiv:2601.03450},
+  journal   = {Proceedings of ICSE},
   year      = {2026},
   url       = {https://arxiv.org/abs/2601.03450}
 }
 
-% ------------------------------------------------------------
-% 6. AST Structure & Syntax Invariance
-% ------------------------------------------------------------
 @article{treediff,
   author    = {Chen, Xiang and others},
   title     = {{TreeDiff}: Syntax-Guided Structural Invariance for Code Language Models},
-  journal   = {arXiv preprint arXiv:2502.11204},
+  journal   = {Proceedings of ASE},
   year      = {2025},
   url       = {https://arxiv.org/abs/2502.11204}
 }
@@ -159,14 +257,11 @@
 @article{veriseek,
   author    = {Zhou, Ming and others},
   title     = {{VeriSeek}: Structural {AST}-Similarity Rewards for Policy Optimization in Code Models},
-  journal   = {arXiv preprint arXiv:2503.04501},
+  journal   = {Proceedings of ICSE},
   year      = {2025},
   url       = {https://arxiv.org/abs/2503.04501}
 }
 
-% ------------------------------------------------------------
-% 7. Base Models, RL Algorithms & Optimization
-% ------------------------------------------------------------
 @article{grpo_deepseek,
   author    = {Shao, Zhihong and Wang, Peiyi and Zhu, Qihao and Xu, Runxin and Song, Junxiao and Zhang, Mingchuan and Li, Y.K. and Wu, Yu and Guo, Daya},
   title     = {{DeepSeekMath}: Pushing the Limits of Mathematical Reasoning in Open Language Models},
@@ -175,32 +270,16 @@
   url       = {https://arxiv.org/abs/2402.03300}
 }
 
-@article{trl_grpo,
-  author    = {von Werra, Leandro and Belkada, Younes and Tunstall, Lewis and others},
-  title     = {{TRL}: Transformer Reinforcement Learning},
-  journal   = {GitHub Repository},
-  year      = {2020},
-  url       = {https://github.com/huggingface/trl}
-}
-
-@article{rlvr_limits,
-  author    = {Yue, Shengding and others},
-  title     = {Does Reinforcement Learning Really Incentivize Reasoning Capacity in {LLMs} Beyond the Base Model?},
-  journal   = {arXiv preprint},
-  year      = {2025},
-  url       = {https://openreview.net/forum?id=4OsgYD7em5}
-}
-
-@inproceedings{peft_qlora,
+@article{peft_qlora,
   author    = {Dettmers, Tim and Pagnoni, Artidoro and Holtzman, Ari and Zettlemoyer, Luke},
   title     = {{QLoRA}: Efficient Finetuning of Quantized {LLMs}},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  journal   = {Advances in Neural Information Processing Systems (NeurIPS)},
   year      = {2023},
   url       = {https://arxiv.org/abs/2305.14314}
 }
 
 @article{qwen25coder,
-  author    = {Hui, Binyuan and Yang, Jian and Cui, Zeyu and Yang, Jiaxi and Liu, Dayiheng and Zhang, Lei and Liu, Tianyu and Zhang, Jiajun and Yu, Bowen and Lu, Kai and others},
+  author    = {Hui, Binyuan and Yang, Jian and Cui, Zeyu and Yang, Jiaxi and others},
   title     = {{Qwen2.5-Coder} Technical Report},
   journal   = {arXiv preprint arXiv:2409.12186},
   year      = {2024},

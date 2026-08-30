@@ -66,9 +66,9 @@
   linkcolor    = OrangeDark,
   citecolor    = OrangeDark,
   urlcolor     = AccentBlue,
-  pdftitle     = {Reduction Ladder for Code \& Multi-Arm Mitigation — Research Proposal},
-  pdfauthor    = {Omar Abdelhamid, Nour Walid (Orange Innovation Labs)},
-  pdfsubject   = {SLM Reasoning Evaluation and Multi-Arm Mitigation in Code Generation},
+  pdftitle     = {Reduction Ladder for Code: Measuring Reasoning vs. Pattern-Matching in Code LLMs/SLMs},
+  pdfauthor    = {Omar Abdelhamid (Orange Innovation Egypt / Benha Univ), Nour Walid},
+  pdfsubject   = {Measuring Reasoning vs. Pattern-Matching and Multi-Arm Mitigation in Code LLMs/SLMs},
 }
 
 %------------------------------------------------------------
@@ -153,7 +153,7 @@
   colframe=SuccessGreen,
   arc=3pt, boxrule=0.8pt,
   fonttitle=\bfseries,
-  title={\faCheckCircle\ Our Novel Contribution: Diagnosis \& Multi-Arm Mitigation},
+  title={\faCheckCircle\ Our Novel Contribution: The Reduction Ladder \& Multi-Arm Mitigation},
   coltitle=SuccessGreen,
   attach boxed title to top left={yshift=-2mm, xshift=4mm},
   boxed title style={colback=white, colframe=SuccessGreen},
@@ -197,41 +197,42 @@
   \pagecolor{DarkBG}
   \color{white}
   \begin{center}
-    \vspace*{1.2cm}
+    \vspace*{1.0cm}
     
     % Orange top bar
     {\color{OrangeMain}\rule{\textwidth}{3pt}}
     \vspace{0.4cm}
     
     {\Large\bfseries\color{OrangeLight} Orange Innovation Labs}\\[0.2cm]
-    {\normalsize\color{MidGray} Research \& Advanced Artificial Intelligence Division}
+    {\normalsize\color{MidGray} AI Research \& Development Division --- Egypt}
     
-    \vspace{1.0cm}
+    \vspace{0.8cm}
     {\color{OrangeMain}\rule{0.4\textwidth}{1pt}}
-    \vspace{1.0cm}
+    \vspace{0.8cm}
     
     {\Huge\bfseries\color{white}
-      Reduction Ladder\\[0.3cm]
-      \color{OrangeMain} for Code \& Mitigation}\\[0.5cm]
+      Reduction Ladder for Code:\\[0.3cm]
+      \color{OrangeMain} Measuring Reasoning vs.\ Pattern-Matching\\
+      \color{white} in Code-Generating LLMs/SLMs}\\[0.5cm]
     
     {\large\color{LightGray}
-      Probing, Diagnosing, and Resolving Pattern-Matching Collapse\\
-      in Small Language Models via an\\
-      Invariance-Regularized Multi-Arm Mitigation Framework}
+      A Controlled Diagnostic Methodology \& Multi-Arm Mitigation Framework\\
+      for Probing and Resolving Shortcut Learning across Model Capacities}
     
-    \vspace{1.2cm}
+    \vspace{1.0cm}
     {\color{OrangeMain}\rule{0.4\textwidth}{1pt}}
-    \vspace{1.2cm}
+    \vspace{1.0cm}
     
     \begin{tabular}{rl}
-      \textbf{\color{OrangeLight} Research Authors:}  & \textbf{Omar Abdelhamid, Nour Walid}\\[4pt]
-      \textbf{\color{OrangeLight} Submitted to:}      & Dr.\ Ghada — Research Supervisor\\[4pt]
-      \textbf{\color{OrangeLight} Institution:}       & Orange Innovation Labs, AI Research Division\\[4pt]
+      \textbf{\color{OrangeLight} Primary Author:}    & \textbf{Omar Abdelhamid}\\[2pt]
+                                                      & {\small AI R\&D, Orange Innovation Egypt \textbar\ M.Sc.\ AI, Benha University}\\[6pt]
+      \textbf{\color{OrangeLight} Co-Author:}         & \textbf{Nour Walid}\\[2pt]
+                                                      & {\small AI Research Engineer, Orange Innovation Labs}\\[6pt]
+      \textbf{\color{OrangeLight} Submitted to:}      & \textbf{Dr.\ Ghada} --- Research Supervisor, Orange Innovation Labs\\[6pt]
       \textbf{\color{OrangeLight} Document Type:}      & Technical Research Proposal \& Engineering Blueprint\\[4pt]
-      \textbf{\color{OrangeLight} Target Model:}      & \texttt{Qwen/Qwen2.5-Coder-1.5B-Instruct} (SLM)\\[4pt]
-      \textbf{\color{OrangeLight} Target Hardware:}   & NVIDIA RTX 3070 (8 GB VRAM) Edge Node\\[4pt]
-      \textbf{\color{OrangeLight} Version:}            & 3.0 — Comprehensive 3-Month Plan\\[4pt]
-      \textbf{\color{OrangeLight} Date:}               & August 2025\\[4pt]
+      \textbf{\color{OrangeLight} Primary Target:}     & \texttt{Qwen/Qwen2.5-Coder-1.5B-Instruct} (Edge SLM)\\[4pt]
+      \textbf{\color{OrangeLight} Hardware Target:}    & Single NVIDIA RTX 3070 (8 GB VRAM) Edge Node\\[4pt]
+      \textbf{\color{OrangeLight} Document Version:}   & 3.5 --- Comprehensive 3-Month Plan \& Extended Foundations\\[4pt]
       \textbf{\color{OrangeLight} Classification:}     & \textcolor{OrangeMain}{\bfseries Orange Restricted / Confidential}\\
     \end{tabular}
     
@@ -239,8 +240,7 @@
     {\color{OrangeMain}\rule{\textwidth}{3pt}}
     \vspace{0.3cm}
     {\small\color{MidGray}
-      This document contains proprietary research material and technical architectures\\
-      developed for internal deployment within Orange Innovation Labs.}
+      Proprietary Research Proposal developed for Orange Innovation Labs AI R\&D Division.}
   \end{center}
 \end{titlepage}
 
@@ -252,21 +252,21 @@
 %------------------------------------------------------------
 \newpage
 \begin{researchbox}[title={Executive Abstract}]
-Small Language Models (SLMs) in the 1--3B parameter regime offer vital cost, latency, and data privacy advantages for telecommunications automation, edge code generation, and self-healing infrastructure across Orange Innovation. However, recent empirical findings demonstrate a critical vulnerability: while these models attain high accuracy on verbatim textbook benchmarks (e.g., HumanEval), their performance experiences catastrophic collapse when faced with semantically identical problems subject to superficial lexical, structural, or narrative perturbations.
+When a code-generating language model is trained with Chain-of-Thought (CoT) reasoning --- whether via teacher distillation, reinforcement learning with verifiable rewards (RLVR), or a hybrid two-stage pipeline --- does it acquire a \textbf{transferable algorithmic reasoning capability}, or does it merely learn to \textbf{recognize familiar problem contours and reduce them to memorized templates}?
 
-This proposal formulates a rigorous, two-stage scientific framework to probe and resolve this failure mode:
+This research proposal establishes a controlled, contamination-resistant evaluation suite and mitigation framework specifically tailored for the programmatic code domain. We address two primary scientific dimensions:
 \begin{enumerate}[leftmargin=1.5em]
-  \item \textbf{The Diagnostic Reduction Ladder (L0--L5):} Mapping directly to peer-reviewed benchmarks on Hugging Face (\textbf{EvoEval}, EMNLP 2024), we establish six progressive transformation levels to quantify the exact \emph{collapse point} ($\ell^*$) and diagnose failure distributions across on-path, off-path, and template-memorization errors.
-  \item \textbf{Prioritized Multi-Arm Mitigation Framework:} Rather than confining our exploration to a single technique, we formulate and empirically evaluate four prioritized mitigation arms:
+  \item \textbf{The Diagnostic Reduction Ladder (L0--L5):} Unlike conventional rewriting benchmarks that mutate semantics while holding syntax static (e.g., Code-Rewriting / MRI), our framework \textbf{holds underlying algorithmic semantics strictly invariant while systematically mutating surface form} (formatting, identifier naming, helper function abstraction, creative narrative reframing, and boundary constraints). Grounded in the peer-reviewed \textbf{EvoEval} (EMNLP 2024) suite, we pinpoint the exact \emph{collapse point} ($\ell^*$) and track multi-dimensional metrics: Pass@1/Pass@5 correctness, Token Efficiency (Per-Token Intelligence vs.\ Overthinking Tax), Diagnostic Error Taxonomy (On-Path vs.\ Off-Path vs.\ Wrong-Template), and Neutral Perturbation Consistency.
+  \item \textbf{The Diagnose-and-Improve Intervention Framework:} We extend pure evaluation into an actionable empirical comparison across model capacities (SLMs $\sim$1.5B vs.\ Mid-tier $\sim$7B vs.\ Frontier LLMs) and prioritize four mitigation arms:
   \begin{itemize}
-    \item \textbf{Arm 1 (Priority 1 — Primary Mitigation):} Invariance-Regularized Policy Optimization (\textbf{Inv-GRPO}), introducing paired cross-perturbation sampling and consistency rewards ($\mathcal{R}_{\text{consistency}}$) with zero inference latency overhead.
-    \item \textbf{Arm 2 (Priority 2 — SFT Distillation):} Contrastive Thought-Template SFT (\textbf{Contrastive-SFT}), fine-tuning on positive Chain-of-Thought (CoT) paired with negative template rejection traces.
-    \item \textbf{Arm 3 (Priority 3 — Structural Syntax):} AST-Guided Policy Optimization (\textbf{AST-RL}), incorporating tree-edit similarity rewards (\texttt{simAST}).
-    \item \textbf{Arm 4 (Priority 4 — Process Verification):} Stepwise Execution-Gated RLVR (\textbf{Step-RLVR}) with intermediate contract checking.
+    \item \textbf{Arm 1 (Priority 1 --- Primary):} Invariance-Regularized Policy Optimization (\textbf{Inv-GRPO}), employing paired cross-perturbation sampling and consistency rewards ($\mathcal{R}_{\text{consistency}}$) with zero inference latency overhead.
+    \item \textbf{Arm 2 (Priority 2 --- Distillation):} Contrastive Thought-Template SFT (\textbf{Contrastive-SFT}), fine-tuning on positive CoT paired with explicit negative template rejection traces.
+    \item \textbf{Arm 3 (Priority 3 --- Syntax):} AST-Guided Policy Optimization (\textbf{AST-RL}) via tree-edit distance rewards (\texttt{simAST}).
+    \item \textbf{Arm 4 (Priority 4 --- Process):} Stepwise Execution-Gated RLVR (\textbf{Step-RLVR}) checking intermediate function contracts.
   \end{itemize}
 \end{enumerate}
 
-We provide a structured 12-week (3-month) execution timeline, a clean architectural blueprint, VRAM-optimized training protocols on commodity edge hardware (RTX 3070 8GB), and actionable deployment guidelines for Orange Innovation.
+We provide a comprehensive 12-week (3-month) execution timeline, a clean architectural software blueprint, and commodity edge hardware feasibility protocols (RTX 3070 8GB VRAM) directly targeting Orange Innovation telecommunications automation and self-healing infrastructure.
 \end{researchbox}
 
 \vspace{0.5cm}
@@ -274,42 +274,38 @@ We provide a structured 12-week (3-month) execution timeline, a clean architectu
 \newpage
 
 %============================================================
-\section{Introduction \& Motivation}
+\section{Core Research Question \& Paper Classification}
 %============================================================
 
-The integration of Small Language Models (SLMs) into autonomous network management, infrastructure-as-code synthesis, and software repair pipelines requires predictable algorithmic generalization. Unlike conversational assistants where stylistic variance is tolerable, code synthesis in enterprise environments demands strict mathematical and logical invariance.
+\subsection{1.1 The Core Question}
 
-\subsection{The Reasoning vs.\ Memorisation Crisis in Code Models}
+\begin{keybox}
+\textbf{Central Thesis:} When a code-generating model is trained with Chain-of-Thought (CoT) --- via distillation, RL, or both --- does it learn a transferable reasoning skill, or does it learn to recognize familiar problem shapes and reduce them to templates it has already solved? How does this behavior systematically diverge between Small Language Models (SLMs $\sim$1--3B) and Large Language Models (LLMs)?
+\end{keybox}
 
-Recent studies~\cite{gsm_symbolic, memorize_or_generalize, evoeval} reveal that high benchmark scores often mask superficial pattern matching:
-\begin{itemize}[leftmargin=1.5em]
-  \item \textbf{Lexical Vulnerability:} Renaming variables or modifying function signatures degrades pass rates by up to 35\%~\cite{gsm_symbolic}.
-  \item \textbf{Narrative Sensitivity:} Embedding identical algorithmic tasks within domain-specific stories (e.g., routing packet allocation rather than array indexing) causes over 40\% degradation~\cite{evoeval}.
-  \item \textbf{The Supervised Fine-Tuning Paradox:} Standard SFT on Chain-of-Thought (CoT) data often amplifies \emph{format mimicry} and template memorization, increasing superficial confidence while reducing resilience to out-of-distribution shifts~\cite{memorize_or_generalize}.
-\end{itemize}
+Capacity is expected to play a decisive structural role. Prior foundational literature indicates that smaller models suffer from a tighter capacity bottleneck, forcing them to rely heavily on memorized pattern matching rather than latent planning. This project constructs an empirical benchmark to quantify this boundary and proposes targeted training interventions to push the reasoning ceiling outward on edge-sized models.
 
-\subsection{Relevance to Orange Innovation Infrastructure}
+\subsection{1.2 Paper Classification \& Scope}
 
-For Orange Innovation Labs, deploying models that rely on memorized templates introduces substantial operational risk:
-\begin{enumerate}[leftmargin=2cm]
-  \item \textbf{Network Orchestration:} Automated scripts generated for novel edge topologies must satisfy invariant routing constraints regardless of variable naming or prompt phrasing.
-  \item \textbf{Zero-Day Bug Remediation:} Autorepair agents must synthesize patches based on underlying control flow rather than replaying outdated patch templates.
-  \item \textbf{Edge Compute Constraints:} Enterprise deployments require parameter-efficient SLMs ($\le 2\text{B}$ parameters) that maximize reasoning density per parameter without relying on multi-billion parameter cloud APIs.
+This research is structured in two complementary tiers:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Primary Tier --- Benchmark \& Evaluation Methodology Paper (Empirical):} A contamination-controlled evaluation suite applied across open-source and frontier models of varying parameter sizes, reporting and analyzing degradation curves, token efficiency, and error taxonomies.
+  \item \textbf{Extended Tier --- Diagnose-and-Improve Intervention Paper (Methodological):} Applying targeted SFT and RL interventions (Distillation, Vanilla RLVR, and novel Inv-GRPO) to demonstrate that the diagnosed collapse point can be actively shifted to harder ladder levels on resource-constrained SLMs.
 \end{enumerate}
 
 %============================================================
-\section{Why the Code Domain? Rationale Over General NLP}
+\section{Foundational Rationale: Why the Code Domain?}
 %============================================================
 
-A central question in this research is: \emph{Why select programmatic code synthesis rather than open-ended natural language generation or general mathematical word problems?}
+A critical design choice of this research is its deliberate focus on \textbf{programmatic code generation} rather than generic natural language reasoning or mathematical word problems.
 
 \begin{domainbox}[title={\faCode\ Foundational Rationale: Why Code is the Optimal Scientific Laboratory}]
 \begin{enumerate}[leftmargin=1.5em]
-  \item \textbf{Deterministic, Objective Verification (Zero LLM-Judge Bias):}
-  In natural language reasoning, evaluating intermediate reasoning steps requires subjective human grading or error-prone LLM-as-a-judge heuristics. In contrast, code execution yields binary, deterministic, and sandbox-verifiable ground truth ($0/1$ pass/fail against unit tests) with microsecond precision.
+  \item \textbf{Deterministic, Objective Ground-Truth Verification (Zero LLM-Judge Bias):}
+  In open-ended NLP or multi-step qualitative reasoning, evaluating intermediate derivations requires subjective human grading or error-prone LLM-as-a-judge heuristics. In contrast, code execution yields binary, deterministic, and sandbox-verifiable ground truth ($0/1$ pass/fail against unit tests) with microsecond precision.
   
   \item \textbf{Strict Semantic Equivalence vs.\ Surface Syntax (AST Isomorphism):}
-  In natural language, paraphrasing alters meaning subtly. In code, modifying variable names, reordering independent statements, or introducing helper functions preserves the \textbf{exact operational semantics and Abstract Syntax Tree (AST) invariants} while completely transforming the surface token distribution. This provides a clean mathematical baseline to isolate reasoning from memorization.
+  In natural language, paraphrasing alters meaning subtly. In code, modifying variable names (\texttt{nums} $\to$ \texttt{alpha\_seq}), reordering independent statements, or introducing helper functions preserves the \textbf{exact operational semantics and Abstract Syntax Tree (AST) invariants} while completely transforming the surface token distribution. This provides a clean mathematical baseline to isolate reasoning from memorization.
   
   \item \textbf{Combinatorial State Space \& Edge Case Fragility:}
   Code synthesis requires multi-step state tracking, boundary condition handling, and algorithmic invariant maintenance. A model relying on shortcut pattern matching will fail catastrophically on edge cases, making shortcut learning immediately observable and measurable.
@@ -320,45 +316,47 @@ A central question in this research is: \emph{Why select programmatic code synth
 \end{domainbox}
 
 %============================================================
-\section{Literature Taxonomy \& Research Landscape (2024--2026)}
+\section{Comprehensive Literature Review \& Theoretical Foundations}
 %============================================================
 
-To establish a comprehensive academic foundation, we synthesize recent literature across five foundational schools:
+Our theoretical foundation synthesizes four complementary bodies of literature:
 
-\subsection{1. Diagnostic Benchmarks \& Generalization Probing}
+\subsection{3.1 The Foundational Six Papers}
+
+Our methodology directly builds upon six foundational papers that formalized reasoning limits, planning depth, and memorization trade-offs:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{P1 --- OOD Generalization of Reasoning in Multimodal LLMs for Visual Planning~\cite{ood_visual_planning}:} Proved that Chain-of-Thought (CoT) helps primarily within-distribution, while performance collapses abruptly under slight out-of-distribution domain shifts.
+  \item \textbf{P2 --- Does RL Really Incentivize Reasoning Capacity Beyond the Base Model?~\cite{rlvr_limits}:} Established the pass@1 vs.\ pass@$k$ exploration methodology; demonstrated that RLVR primarily elevates sampling efficiency for solutions already reachable in the base model's distribution, whereas knowledge distillation is the primary mechanism that introduces genuinely novel capability.
+  \item \textbf{P3 --- The Depth Ceiling: Limits of LLMs in Discovering Latent Planning~\cite{depth_ceiling}:} Discovered a hard cap on latent (hidden) planning depth (3--7 steps depending on parameter count), showing that explicit CoT lifts the cap to $\sim$20 steps; introduced the \textbf{on-path vs.\ off-path} error distinction which we adapt for our code error taxonomy.
+  \item \textbf{P4 --- Trapped in the Past? Fluid vs.\ Crystallized Intelligence via Chess~\cite{trapped_in_past}:} Provided a methodological template for constructing difficulty taxonomies by distance from training distribution without requiring access to proprietary pre-training corpora.
+  \item \textbf{P5 --- Too Big to Think: Capacity, Memorization, and Generalization~\cite{too_big_to_think}:} Formalized the structural trade-off between model parameter capacity and memorization vs.\ generalization, proving that jointly training on both never yields extrapolation regardless of size --- directly motivating our SLM vs.\ LLM capacity axis.
+  \item \textbf{P6 --- Beyond Memorization: Reductive vs.\ Epistemic Reasoning via Logic Puzzles~\cite{beyond_memorization}:} Introduced \textbf{reduction} as the unifying theoretical concept (memorization being the limiting case of reduction) and formulated the reduction-ladder methodology which we adapt to the code domain.
+\end{enumerate}
+
+\subsection{3.2 Code-Domain Memorization \& Contamination Literature}
+
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{EvoEval (EMNLP 2024)~\cite{evoeval}:} Created five semantic perturbation dimensions for HumanEval, establishing that 57 state-of-the-art LLMs suffer an average 38--40\% degradation across subtle, creative, and combined transformations.
-  \item \textbf{GSM-Symbolic (ICLR 2025)~\cite{gsm_symbolic}:} Demonstrated that non-functional prompt variations induce catastrophic reasoning collapse in math models.
-  \item \textbf{Memorize or Generalize? (arXiv:2503.02296, 2025)~\cite{memorize_or_generalize}:} Defined the Memorisation Risk Index (MRI) and revealed that standard SFT exacerbates template memorization while RLVR promotes invariant reasoning.
-  \item \textbf{LiveCodeBench (arXiv:2403.07974, 2024)~\cite{livecodebench}:} Provides continuously updated, contamination-free programming problems used as our temporal control group.
-  \item \textbf{CRUXEval (ICML 2024)~\cite{cruxeval}:} Evaluated code reasoning via input/output execution prediction, proving that code understanding lags far behind code generation.
+  \item \textbf{Memorize or Generalize? Evaluating LLM Code Generation with Code-Rewriting~\cite{memorize_or_generalize}:} Introduced code-rewriting and the Memorization Risk Index (MRI). \emph{Key Relationship:} This is the closest prior work to our proposal, but performs the \textbf{inverse transformation} of what we propose: they mutate semantics while preserving surface syntax, whereas our Reduction Ladder \textbf{preserves underlying semantics while systematically mutating surface form}.
+  \item \textbf{LLM Performance for Code Generation on Noisy Tasks~\cite{noisy_code_tasks}:} Identified ``eager pattern matching'' and proposed performance decay under obfuscation as an empirical contamination detector.
+  \item \textbf{LiveCodeBench~\cite{livecodebench}:} Continuously harvests contamination-free problems from LeetCode, AtCoder, and Codeforces post-cutoff, serving as our clean temporal control set.
+  \item \textbf{LeetCodeDataset~\cite{leetcode_dataset}:} Provided temporal pre/post-2024 splits and rich test cases, serving as our curated seed problem source.
+  \item \textbf{DynaCode~\cite{dynacode}:} Dynamically perturbs MBPP/MBPP+ problems, demonstrating sharp degradation in static benchmarks due to data contamination.
+  \item \textbf{Learned or Memorized? Quantifying Memorization Advantage in Code LLMs~\cite{learned_or_memorized}:} Introduced perturbation-based memorization advantage scores across 8 open-source code models and 19 benchmarks.
 \end{itemize}
 
-\subsection{2. Invariance \& Perturbation-Aware Reinforcement Learning}
+\subsection{3.3 Multi-Dimensional Evaluation Dimensions Beyond Correctness}
+
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{CLARity (2025)~\cite{clarity_rl}:} Formulated consistency-aware reinforcement learning rewards that penalise contradictory reasoning paths across semantically equivalent queries.
-  \item \textbf{LoPE (2025)~\cite{lope_perturbation}:} Demonstrated that injecting task-irrelevant prompt perturbations during RL training prevents policy overfitting and breaks shortcut optimization.
-  \item \textbf{Break-The-Chain (2025)~\cite{break_the_chain}:} Investigated Chain-of-Thought robustness, showing that CoT traces often break under semantic reframing.
+  \item \textbf{OckBench --- Per-Token Intelligence \& Overthinking Tax~\cite{ockbench}:} Showed that larger models reach correct answers with denser, shorter reasoning, while smaller models pay an ``Overthinking Tax'' on complex tasks.
+  \item \textbf{Thinking Longer, Not Always Smarter~\cite{thinking_longer}:} Empirically proved that models generate significantly more reasoning tokens on incorrect attempts than on successful ones (up to 45\% token overhead for failure).
+  \item \textbf{Attribution Graphs \& Faithfulness~\cite{faithfulness_graphs}:} Evaluated whether generated reasoning traces are genuinely causal via step-deletion perturbations.
+  \item \textbf{Flip-Flop Consistency~\cite{flip_flop_consistency}:} Documented substantial accuracy swings resulting purely from neutral prompt changes (variable renaming, casing, argument ordering).
 \end{itemize}
 
-\subsection{3. Contrastive Learning \& Policy Optimization}
-\begin{itemize}[leftmargin=1.5em]
-  \item \textbf{ReCode (2025)~\cite{recode_contrastive}:} Designed contrastive reasoning-process rewards distinguishing logical derivations from shortcut derivations.
-  \item \textbf{CLIPO (2025)~\cite{clipo_rl}:} Integrated contrastive trajectory clustering directly into policy gradient updates to stabilize RL exploration.
-  \item \textbf{SuperCorrect (2024)~\cite{supercorrect}:} Distilled hierarchical thought templates and negative correction traces for autonomous error recovery.
-\end{itemize}
+\subsection{3.4 State-of-the-Art Multi-Arm Mitigation Paradigms (2024--2026)}
 
-\subsection{4. Information Bottleneck \& Representation Regularization}
-\begin{itemize}[leftmargin=1.5em]
-  \item \textbf{IB-FT (2024)~\cite{ibft_memorization}:} Formulated an Information Bottleneck loss penalty on hidden representations to compress superficial prompt features and retain invariant algorithmic logic.
-  \item \textbf{IBRO (2025)~\cite{ibro_rlvr}:} Applied Information Bottleneck principles directly to RLVR, ensuring reasoning traces remain informative without memorized noise.
-\end{itemize}
-
-\subsection{5. Process Reward Models \& Structural AST Invariance}
-\begin{itemize}[leftmargin=1.5em]
-  \item \textbf{CodePRM~\cite{codeprm} \& ExecVerify~\cite{execverify}:} Explored step-level and execution-trace rewards to prevent outcome reward hacking.
-  \item \textbf{TreeDiff~\cite{treediff} \& VeriSeek~\cite{veriseek}:} Enforced Abstract Syntax Tree (AST) similarity rewards (\texttt{simAST}) to ensure syntax robustness.
-\end{itemize}
+Table~\ref{tab:mitigation_landscape} synthesizes the mitigation landscape:
 
 \begin{table}[H]
 \centering
@@ -369,45 +367,52 @@ To establish a comprehensive academic foundation, we synthesize recent literatur
 \toprule
 \textbf{Mitigation Paradigm} & \textbf{Core Mechanism} & \textbf{Primary Strength} & \textbf{Key Limitation / Bottleneck} \\
 \midrule
-\textbf{Process Rewards (PRMs)~\cite{codeprm}} & Step-level verifier scoring during reasoning. & Dense feedback prevents reward hacking. & Requires expensive step annotations; high training compute. \\
-\textbf{AST Invariance~\cite{treediff}} & Enforce syntax tree similarity (simAST) in loss / reward. & Prevents lexical overfitting; guarantees syntax. & Limited to syntactic mutations; misses high-level story reframing. \\
+\textbf{Process Rewards (PRMs)~\cite{codeprm, execverify}} & Step-level verifier scoring during reasoning. & Dense feedback prevents reward hacking. & Requires expensive step annotations; high training compute. \\
+\textbf{AST Invariance~\cite{treediff, veriseek}} & Enforce syntax tree similarity (simAST) in loss / reward. & Prevents lexical overfitting; guarantees syntax. & Limited to syntactic mutations; misses high-level story reframing. \\
 \textbf{Self-Correction~\cite{supercorrect}} & Multi-turn execution feedback with compiler error traces. & Dynamic error recovery at test time. & High inference latency; impractical for real-time edge SLMs. \\
-\textbf{Information Bottleneck~\cite{ibft_memorization}} & Regularize hidden states to minimize mutual info $I(X; Z)$. & Strong theoretical guarantee against memorisation. & Training instability and hyperparameter sensitivity on SLMs. \\
+\textbf{Information Bottleneck~\cite{ibft_memorization, ibro_rlvr}} & Regularize hidden states to minimize mutual info $I(X; Z)$. & Strong theoretical guarantee against memorisation. & Training instability and hyperparameter sensitivity on SLMs. \\
 \textbf{Inv-GRPO (Ours)} & \textbf{Cross-perturbation paired sampling + Consistency Regularizer.} & \textbf{Zero inference overhead; directly attacks shortcut learning.} & \textbf{Requires paired perturbation batches during training.} \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 %============================================================
-\section{The Reduction Ladder Framework (L0--L5)}
+\section{The Reduction Ladder Framework (Code Domain)}
 %============================================================
-
-Table~\ref{tab:ladder} details the six progressive levels of our Reduction Ladder mapped to verified datasets on Hugging Face:
 
 \begin{table}[H]
 \centering
-\caption{Reduction Ladder level definitions and verified Hugging Face dataset mapping}
+\caption{Reduction Ladder levels, transformation operations, and probing objectives}
 \label{tab:ladder}
 \renewcommand{\arraystretch}{1.5}
 \begin{tabularx}{\textwidth}{c l l X}
 \toprule
-\textbf{Level} & \textbf{Level Name} & \textbf{Hugging Face Source} & \textbf{Transformation / Probing Goal} \\
+\textbf{Level} & \textbf{Transformation Type} & \textbf{Hugging Face Source} & \textbf{Probing Objective \& Test Focus} \\
 \midrule
-L0 & Verbatim Classic & \texttt{openai/openai\_humaneval} & Canonical baseline problem statement. \\
-L1 & Format / Subtle Shift & \texttt{evoeval/EvoEval\_subtle} & Minor wording and specification nuance shifts. \\
-L2 & Structural ToolUse & \texttt{evoeval/EvoEval\_tool\_use} & Helper function integration and structural API shifts. \\
-L3 & Narrative Reframing & \texttt{evoeval/EvoEval\_creative} & Novel creative narrative context for identical logic. \\
-L4 & Constraint Augmentation & \texttt{evoeval/EvoEval\_difficult} & Core algorithm + extra boundary constraints. \\
-L5 & Concept Combination & \texttt{evoeval/EvoEval\_combine} & Multi-algorithmic composition and integration. \\
+L0 & Verbatim Classic Problem & \texttt{openai/openai\_humaneval} & Raw memorization / template retrieval baseline. \\
+L1 & Format / Subtle Shift & \texttt{evoeval/EvoEval\_subtle} & Robustness to trivial formatting \& specification shifts. \\
+L2 & Structural ToolUse Shift & \texttt{evoeval/EvoEval\_tool\_use} & Helper function integration \& API abstraction changes. \\
+L3 & Narrative Reframing & \texttt{evoeval/EvoEval\_creative} & Recognition of algorithmic logic under novel storytelling. \\
+L4 & Constraint Augmentation & \texttt{evoeval/EvoEval\_difficult} & Forces algorithmic adaptation rather than retrieval. \\
+L5 & Concept Combination & \texttt{evoeval/EvoEval\_combine} & Genuine transfer \& multi-concept composition. \\
 \midrule
-Ctrl & Contamination Control & \texttt{livecodebench/code\_gen\_lite} & Post-cutoff temporal generalization control set. \\
+Ctrl & Contamination Control & \texttt{livecodebench/code\_gen\_lite} & Clean post-cutoff generalization verification. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\subsection{Worked Example: Two Sum Across L0--L5}
+\subsection{4.1 Inverse Transformation: Reduction Ladder vs.\ Code-Rewriting (MRI)}
 
-\begin{researchbox}[title={Concrete Transformation Walkthrough: Two Sum}]
+\begin{researchbox}[title={Theoretical Contrast: Reduction Ladder vs.\ Code-Rewriting (MRI)}]
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Code-Rewriting (MRI Approach~\cite{memorize_or_generalize}):} \emph{Varies semantics while holding surface syntax fixed.} Tests whether a model blindly generates familiar code when the underlying mathematical requirements have changed.
+  \item \textbf{Reduction Ladder (Our Approach):} \emph{Holds underlying algorithmic semantics strictly invariant while systematically mutating surface form and context.} Tests whether a model fails to apply a valid algorithmic solution merely because the surface tokens and problem framing have shifted.
+\end{itemize}
+\end{researchbox}
+
+\subsection{4.2 Concrete Transformation Walkthrough: Two Sum (L0--L5)}
+
+\begin{researchbox}[title={Concrete Transformation Walkthrough: Two Sum Across L0--L5}]
 \textbf{L0 (Verbatim Baseline):} Given an array of integers \texttt{nums} and integer \texttt{target}, return indices of the two numbers such that they add up to \texttt{target}.\\[4pt]
 \textbf{L1 (Format / Subtle):} Given a comma-delimited string \texttt{"2,7,11,15"} and integer target 9, parse values and return the 0-indexed integer indices of the pair.\\[4pt]
 \textbf{L2 (ToolUse / Structural):} Implement \texttt{find\_pair(seq, target)} using a pre-defined helper function \texttt{hash\_lookup(table, key)} to manage lookup operations.\\[4pt]
@@ -417,67 +422,93 @@ Ctrl & Contamination Control & \texttt{livecodebench/code\_gen\_lite} & Post-cut
 \end{researchbox}
 
 %============================================================
-\section{Prioritized Multi-Arm Mitigation Framework}
+\section{Multi-Dimensional Evaluation Methodology}
 %============================================================
 
-To avoid single-method bias and rigorously explore the solution space, we formulate four prioritized experimental arms:
+Beyond standard binary correctness, our evaluation harness captures four orthogonal dimensions:
+
+\subsection{5.1 Correctness (Base Metric)}
+Pass/fail status against held-out unit tests executed in an isolated, timeout-guarded multiprocess sandbox.
+\[
+\text{pass@1} = \frac{1}{|D|} \sum_{i=1}^{|D|} \mathbb{I}(\text{sample}_1 == \text{PASS}), \quad \text{pass@5} = 1 - \frac{\binom{n-c}{5}}{\binom{n}{5}}
+\]
+
+\subsection{5.2 Token Efficiency \& Compute Density}
+Tracking reasoning-trace token length ($\tau_\ell$) across ladder levels.
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Hypothesis:} Genuine reasoning exhibits token usage that scales adaptively with structural problem complexity (L4/L5). Pattern matching displays either flat token usage (unconditional template dump) or an unproductive ``Overthinking Tax'' (excess tokens with zero accuracy gain~\cite{ockbench, thinking_longer}).
+\end{itemize}
+
+\subsection{5.3 Diagnostic Error Taxonomy}
+When an attempt fails, it is categorized into:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{On-Path Failure:} Correct algorithmic approach, flawed execution (e.g., off-by-one index, boundary inequality).
+  \item \textbf{Off-Path Failure:} Algorithmic logic lost entirely; hallucinated control flow.
+  \item \textbf{Wrong-Template Failure:} Confidently applied a memorized template from an unrelated classic problem. \emph{Category (3) provides the strongest direct proof of pattern-matching collapse.}
+\end{enumerate}
+
+\subsection{5.4 Consistency Under Neutral Perturbation ($\Delta_c$)}
+Re-running identical logical problems with purely neutral surface variations (variable names, argument ordering). Any accuracy drop with zero semantic change confirms surface token dependency:
+\[
+\Delta_c = |\text{pass@1}(L_1) - \text{pass@1}(L_2)|
+\]
+
+\subsection{5.5 Collapse Point ($\ell^*$) \& Ladder AUC ($\mathcal{A}$)}
+\[
+\ell^* = \min \left\{ \ell \in \{0,1,2,3,4,5\} \mid \text{pass@1}(\ell) < 0.50 \right\}, \quad \mathcal{A} = \frac{1}{6} \sum_{\ell=0}^{5} \text{pass@1}(\ell)
+\]
+
+%============================================================
+\section{Model Evaluation Hierarchy \& Capacity Axis}
+%============================================================
+
+To test the capacity trade-off formalized in Paper 5~\cite{too_big_to_think}, we evaluate across three parameter tiers:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{SLM Tier ($\sim$1--3B):} \texttt{Qwen2.5-Coder-1.5B-Instruct} (Base, SFT-tuned, and RLVR-tuned).
+  \item \textbf{Mid Tier ($\sim$7--8B):} \texttt{Qwen2.5-Coder-7B-Instruct} / \texttt{CodeLlama-7B} to analyze how capacity mitigates template collapse.
+  \item \textbf{Frontier LLM Tier (API Upper Bound):} A frontier coding model providing the empirical reasoning ceiling.
+\end{itemize}
+
+%============================================================
+\section{The Diagnose-and-Improve Intervention Framework}
+%============================================================
+
+\subsection{7.1 Intervention Comparison: Distillation vs.\ RLVR vs.\ RLIR}
 
 \begin{table}[H]
 \centering
-\caption{Prioritized Multi-Arm mitigation framework for SLM code reasoning}
-\label{tab:mitigation_arms}
+\caption{Comparative analysis of training intervention paradigms}
+\label{tab:interventions}
 \renewcommand{\arraystretch}{1.4}
-\begin{tabularx}{\textwidth}{c l l X}
+\begin{tabularx}{\textwidth}{l X X X}
 \toprule
-\textbf{Priority} & \textbf{Mitigation Arm} & \textbf{Core Paradigm} & \textbf{Implementation Mechanism} \\
+\textbf{Dimension} & \textbf{1 --- Distillation} & \textbf{2 --- RLVR} & \textbf{3 --- RLIR (Intrinsic)} \\
 \midrule
-\textbf{P1 (Primary)} & \textbf{Inv-GRPO} & Multi-View Invariance RL & Cross-perturbation paired sampling with consistency reward $\mathcal{R}_{\text{consistency}}$. \\
-\textbf{P2 (SFT)} & \textbf{Contrastive-SFT} & Negative Rejection SFT & Fine-tuning on positive CoT paired with explicit negative template rejection traces. \\
-\textbf{P3 (Syntax)} & \textbf{AST-RL} & Structural Syntax Invariance & Abstract Syntax Tree similarity (\texttt{simAST}) reward during policy optimization. \\
-\textbf{P4 (Process)} & \textbf{Step-RLVR} & Intermediate Process RL & Stepwise execution trace verification on intermediate function contracts. \\
+\textbf{Reward Source} & External teacher model (expert CoT traces). & Automatic unit-test sandbox verifier ($0/1$). & Model judges itself (self-rewarding loop). \\
+\textbf{Adds New Capability?} & \textbf{Yes} (seeding new exploration paths, per Paper 2). & \textbf{Mostly No} (raises sampling efficiency of existing paths). & \textbf{Unclear} (severe risk of reward hacking / drift). \\
+\textbf{Compute Cost} & Lowest (QLoRA SFT, single GPU). & Moderate to High (rollouts, PPO/GRPO updates). & High \& unstable without objective anchor. \\
+\textbf{Fit for Project} & \textbf{Primary Core SFT Arm} & \textbf{Comparative RL Baseline} & \textbf{Deprioritized} (objective unit tests exist). \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\subsection{Arm 1 (Priority 1 — Primary): Invariance-Regularized GRPO (Inv-GRPO)}
+\subsection{7.2 Combined Strategy: Distillation Followed by RLVR (DeepSeek-R1 Pattern)}
 
-During training, Inv-GRPO feeds paired inputs $(x, x')$ representing logically equivalent variants (e.g., $x \in L_0$ and $x' \in L_2$):
+If an SLM does not possess a capability within its sampling distribution, standalone RLVR stalls under the \textbf{sparse-reward problem}. Running Distillation first seeds the reasoning distribution; subsequent RLVR then optimizes and hardens this capability against reward hacking.
+
+\subsection{7.3 Proposed Novel Method: Invariance-Regularized GRPO (Inv-GRPO)}
+
+During policy rollouts, Inv-GRPO feeds paired semantically equivalent prompts $(x, x')$:
 \[
 \mathcal{R}_{\text{total}}(y_i, y'_i) = \mathcal{R}_{\text{exec}}(y_i) + \mathcal{R}_{\text{exec}}(y'_i) + \lambda \cdot \mathcal{R}_{\text{consistency}}(y_i, y'_i) - \gamma \cdot \mathcal{P}_{\text{template}}
 \]
-where:
-\begin{itemize}
-  \item $\mathcal{R}_{\text{exec}}(y) \in [0, 1]$ is the execution pass rate across the unit-test suite.
-  \item $\mathcal{R}_{\text{consistency}}(y_i, y'_i) = \mathbb{I}(\mathcal{R}_{\text{exec}}(y_i) = 1 \land \mathcal{R}_{\text{exec}}(y'_i) = 1)$ enforces joint solution consistency with zero inference latency overhead.
-  \item $\mathcal{P}_{\text{template}}$ penalizes boilerplate outputs exhibiting uncalled classic template signatures.
-\end{itemize}
-
-The joint group advantage is computed over paired rollouts:
+where $\mathcal{R}_{\text{consistency}} = \mathbb{I}(\mathcal{R}_{\text{exec}}(y_i) = 1 \land \mathcal{R}_{\text{exec}}(y'_i) = 1)$ penalizes contradictory outputs with zero inference latency overhead. Group advantage is computed over paired completions:
 \[
-\hat{A}_{i} = \frac{\mathcal{R}_{\text{total}}(y_i, y'_i) - \mu_{\mathcal{R}}}{\sigma_{\mathcal{R}} + \epsilon}
+\hat{A}_i = \frac{\mathcal{R}_{\text{total}}(y_i, y'_i) - \mu_{\mathcal{R}}}{\sigma_{\mathcal{R}} + \epsilon}
 \]
 
-\subsection{Arm 2 (Priority 2): Contrastive Thought-Template SFT}
-
-Inspired by SuperCorrect~\cite{supercorrect}, this arm augments SFT training data with negative shortcut examples, training the student model via cross-entropy loss to explicitly reject memorized templates:
-\[
-\mathcal{L}_{\text{Contrastive}} = -\sum_{t=1}^{T} \log P_\theta(y_t^+ \mid x, y_{<t}^+) + \alpha \max \left( 0, \log P_\theta(y^- \mid x) - \log P_\theta(y^+ \mid x) + m \right)
-\]
-
-\subsection{Arm 3 (Priority 3): AST-Guided Structural Policy Optimization}
-
-This arm integrates a deterministic syntax parser into the RL reward loop. For any generated code $y$, we compute the tree-edit distance against the reference canonical AST:
-\[
-\mathcal{R}_{\text{AST}}(y) = \exp \left( - \alpha \cdot \text{TreeDist}(\text{AST}(y), \text{AST}(y^*)) \right)
-\]
-
-\subsection{Arm 4 (Priority 4): Stepwise Execution-Gated RLVR}
-
-Building upon CodePRM~\cite{codeprm} and ExecVerify~\cite{execverify}, this arm checks pre- and post-conditions of sub-functions during sandbox execution, awarding partial reward credits for correct algorithmic sub-goals in complex L4/L5 problems.
-
-%============================================================
-\section{Experimental Suite \& Comparative Hypotheses}
-%============================================================
+\subsection{7.4 Comparative Model Suite (M1 to M6)}
 
 \begin{figure}[H]
 \centering
@@ -497,70 +528,46 @@ Building upon CodePRM~\cite{codeprm} and ExecVerify~\cite{execverify}, this arm 
 \addplot[OrangeMain, mark=*, mark size=2.5] coordinates {
   (0,0.88)(1,0.76)(2,0.58)(3,0.30)(4,0.16)(5,0.07)
 };
-\addlegendentry{Baseline (Un-tuned)}
+\addlegendentry{M1: Baseline (Un-tuned)}
 
 % Vanilla SFT
 \addplot[AccentBlue, mark=square*, mark size=2.5, dashed] coordinates {
   (0,0.91)(1,0.84)(2,0.74)(3,0.52)(4,0.32)(5,0.16)
 };
-\addlegendentry{Vanilla SFT}
+\addlegendentry{M2: Vanilla SFT}
 
 % Contrastive-SFT (P2)
 \addplot[purple, mark=otimes*, mark size=2.5, dashdotted] coordinates {
   (0,0.91)(1,0.86)(2,0.79)(3,0.65)(4,0.45)(5,0.24)
 };
-\addlegendentry{Contrastive-SFT (P2)}
+\addlegendentry{M3: Contrastive-SFT (P2)}
 
 % Vanilla RLVR
 \addplot[MidGray, mark=diamond*, mark size=2.5, dashdotdotted] coordinates {
   (0,0.92)(1,0.86)(2,0.79)(3,0.58)(4,0.38)(5,0.20)
 };
-\addlegendentry{Vanilla GRPO}
+\addlegendentry{M4: Vanilla GRPO}
 
 % AST-RL (P3)
 \addplot[teal, mark=triangle, mark size=2.5, dotted] coordinates {
   (0,0.92)(1,0.89)(2,0.84)(3,0.70)(4,0.50)(5,0.30)
 };
-\addlegendentry{AST-RL (P3)}
+\addlegendentry{M5: AST-RL (P3)}
 
 % Inv-GRPO (P1 - Ours)
 \addplot[SuccessGreen, mark=triangle*, mark size=3.0] coordinates {
   (0,0.93)(1,0.91)(2,0.88)(3,0.78)(4,0.62)(5,0.41)
 };
-\addlegendentry{\textbf{Inv-GRPO (P1 - Primary Mitigation)}}
+\addlegendentry{\textbf{M6: Inv-GRPO (P1 --- Primary Mitigation)}}
 
 % 50% threshold
 \addplot[AlertRed, dashed, thin] coordinates {(0,0.5)(5,0.5)};
 \addlegendentry{Collapse threshold (50\%)}
 \end{axis}
 \end{tikzpicture}
-\caption{Comparative performance degradation curves across the Reduction Ladder, illustrating how each prioritized mitigation arm delays the collapse point towards L4/L5.}
+\caption{Predicted performance degradation curves across the Reduction Ladder, illustrating how Inv-GRPO and Contrastive SFT actively delay the collapse point towards L4/L5.}
 \label{fig:expected_results}
 \end{figure}
-
-%============================================================
-\section{Multi-Dimensional Evaluation Metrics}
-%============================================================
-
-\begin{table}[H]
-\centering
-\caption{Complete evaluation metric suite with mathematical formulations}
-\label{tab:metrics}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabularx}{\textwidth}{l l X}
-\toprule
-\textbf{Metric} & \textbf{Mathematical Formulation} & \textbf{Scientific Purpose} \\
-\midrule
-Pass@1 & $p_1 = \frac{1}{|D|} \sum_{i=1}^{|D|} \mathbb{I}(\text{sample}_1 == \text{PASS})$ & Primary greedy accuracy ($T=0.0$). \\
-Pass@5 & $p_5 = 1 - \frac{\binom{n-c}{5}}{\binom{n}{5}}$ & Exploration coverage across 5 samples ($T=0.8$). \\
-Collapse Point & $\ell^* = \min \{ \ell \mid \text{pass@1}(\ell) < 0.50 \}$ & Threshold of catastrophic failure. \\
-Ladder AUC & $\mathcal{A} = \frac{1}{6} \sum_{\ell=0}^{5} \text{pass@1}(\ell)$ & Aggregate gracefulness of degradation. \\
-Consistency Delta & $\Delta_c = |\text{pass@1}(L_1) - \text{pass@1}(L_2)|$ & Sensitivity to surface-level lexical variations. \\
-Memorisation Risk & $\text{MRI} = \text{Sim}(y, y^*) \cdot \max(0, p_1(L_0) - p_1(L_3))$ & Quantitative score for harmful memorisation~\cite{memorize_or_generalize}. \\
-Token Efficiency & $\tau_\ell = \text{Mean}(\text{Length}(\text{Reasoning Tokens}))$ & Trace dynamics across difficulty levels. \\
-\bottomrule
-\end{tabularx}
-\end{table}
 
 %============================================================
 \section{Hardware Feasibility \& VRAM Budget (RTX 3070 8GB)}
@@ -576,32 +583,15 @@ Token Efficiency & $\tau_\ell = \text{Mean}(\text{Length}(\text{Reasoning Tokens
 \textbf{Stage} & \textbf{VRAM Budget} & \textbf{Optimization Strategy} \\
 \midrule
 Inference (Eval) & $\approx$ 4.0 GB & 4-bit NF4 precision, batch size 1 \\
-QLoRA / Contrastive SFT & $\approx$ 6.5 GB & PEFT LoRA adapters, gradient accumulation = 4 \\
-GRPO / AST-RL / Inv-GRPO & $\approx$ 7.2 GB & Gradient checkpointing, group size $G=4$ \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\begin{table}[H]
-\centering
-\caption{Project risk register and mitigations}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabularx}{\textwidth}{l c c X}
-\toprule
-\textbf{Risk} & \textbf{Prob.} & \textbf{Impact} & \textbf{Mitigation Strategy} \\
-\midrule
-VRAM OOM during Inv-GRPO & Med & Med & Enable gradient checkpointing; interleave prompt-pair generation \\
-Benchmark format mismatch & Low & Low & Automated schema normalization in Stage 1 \\
-AST Parsing Failures & Low & Low & Fallback to execution reward if syntax tree generation fails \\
+QLoRA / Contrastive SFT & $\approx$ 6.5 GB & PEFT LoRA adapters ($r=16, \alpha=32$), gradient accumulation = 4 \\
+GRPO / AST-RL / Inv-GRPO & $\approx$ 7.2 GB & Gradient checkpointing, group size $G=4$, interleaved rollouts \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 %============================================================
-\section{Exhaustive 3-Month Week-by-Week Execution Timeline}
+\section{Exhaustive 3-Month (12-Week) Execution Roadmap}
 %============================================================
-
-To guarantee rigorous execution and seamless milestone tracking across Orange Innovation Labs, the 3-month (12-week) research project is structured with granular weekly objectives:
 
 \begin{table}[H]
 \centering
@@ -613,22 +603,71 @@ To guarantee rigorous execution and seamless milestone tracking across Orange In
 \textbf{Month} & \textbf{Week} & \textbf{Research Stage} & \textbf{Weekly Deliverables \& Key Technical Tasks} \\
 \midrule
 \multirow{4}{*}{\textbf{Month 1}} 
-& \textbf{W1} & Ingestion & Setup & Environment validation in \texttt{unsloth\_env}; Ingest L0--L5 datasets from Hugging Face into normalized JSONL cache. \\
-& \textbf{W2} & Sandbox Hardening & Implement multi-process isolated execution sandbox with timeout/memory limits; 100\% verification of ground-truth solutions. \\
-& \textbf{W3} & Baseline Inference & 4-bit NF4 Quantization of \texttt{Qwen2.5-Coder-1.5B}; Greedy Pass@1 and sampled Pass@5 execution across all L0--L5 levels. \\
-& \textbf{W4} & Collapse Diagnosis & Automated error taxonomy classification (on-path vs off-path vs wrong-template); Calculate baseline $\ell^*$, Ladder AUC, and Deliverable Report 1. \\
+& \textbf{W1} & Ingestion \& Setup & Environment setup in \texttt{unsloth\_env}; Ingest L0--L5 datasets into normalized JSONL cache. \\
+& \textbf{W2} & Sandbox Hardening & Implement multiprocessing sandbox with timeout guarding; 100\% verification of canonical solutions. \\
+& \textbf{W3} & Baseline Inference & 4-bit NF4 Quantization of \texttt{Qwen2.5-Coder-1.5B}; Pass@1 and Pass@5 inference across all L0--L5 levels. \\
+& \textbf{W4} & Collapse Diagnosis & Automated error taxonomy classification (on-path vs off-path vs wrong-template); Calculate baseline $\ell^*$ and Report 1. \\
 \midrule
 \multirow{4}{*}{\textbf{Month 2}} 
-& \textbf{W5} & SFT Data Curation & Curate 10K reasoning trajectories from \texttt{OpenCodeReasoning}; Generate synthetic negative shortcut rejection pairs for Contrastive SFT. \\
-& \textbf{W6} & SFT Model Training & Train Arm 2A (Vanilla SFT M2) and Arm 2B (Contrastive Thought-Template SFT M3) with 4-bit QLoRA ($r=16, \alpha=32$). \\
-& \textbf{W7} & SFT Ladder Probing & Comprehensive L0--L5 evaluation of SFT checkpoints; Compute Memorisation Risk Index (MRI) to measure SFT format-mimicry bias. \\
-& \textbf{W8} & Standard RLVR & Train Arm 0 (Vanilla GRPO M4) and Arm 3 (AST-RL M5) with \texttt{simAST} tree-edit rewards; Benchmark outcome reward-hacking. \\
+& \textbf{W5} & SFT Data Curation & Curate 10K reasoning trajectories from \texttt{OpenCodeReasoning}; Synthesize negative shortcut rejection traces. \\
+& \textbf{W6} & SFT Model Training & Train Arm 2A (Vanilla SFT M2) and Arm 2B (Contrastive SFT M3) via 4-bit QLoRA ($r=16, \alpha=32$). \\
+& \textbf{W7} & SFT Ladder Probing & Comprehensive L0--L5 evaluation of SFT checkpoints; Compute Memorisation Risk Index (MRI). \\
+& \textbf{W8} & Standard RLVR & Train Arm 0 (Vanilla GRPO M4) and Arm 3 (AST-RL M5) with \texttt{simAST} tree-edit rewards. \\
 \midrule
 \multirow{4}{*}{\textbf{Month 3}} 
-& \textbf{W9} & Inv-GRPO Training & Implement paired cross-perturbation sampling ($x_{L0}, x_{L2}$); Train Arm 1 (Inv-GRPO M6) with consistency reward $\mathcal{R}_{\text{consistency}}$. \\
-& \textbf{W10} & Process RL \& Tuning & Train Arm 4 (Step-RLVR) with intermediate sub-function contracts; Hyperparameter grid search over consistency weights $\lambda, \gamma$. \\
-& \textbf{W11} & Full Suite Benchmarking & Cross-evaluation of all 6 models (M1--M6) across L0--L5 and unseen temporal control set (\texttt{LiveCodeBench}); Latency and FLOPs profiling. \\
-& \textbf{W12} & Synthesis \& Delivery & Generate final publication figures, compile comprehensive research report, package reproducible codebase, and present findings to Dr.\ Ghada. \\
+& \textbf{W9} & Inv-GRPO Training & Implement paired cross-perturbation sampling ($x_{L0}, x_{L2}$); Train Arm 1 (Inv-GRPO M6) with consistency rewards. \\
+& \textbf{W10} & Process RL \& Tuning & Train Arm 4 (Step-RLVR); Hyperparameter optimization over consistency weights $\lambda, \gamma$. \\
+& \textbf{W11} & Full Suite Benchmarking & Cross-evaluation of all 6 models (M1--M6) across L0--L5 and unseen temporal control (\texttt{LiveCodeBench}). \\
+& \textbf{W12} & Synthesis \& Delivery & Generate final publication figures, compile comprehensive research report, and present findings to Dr.\ Ghada. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%============================================================
+\section{Comprehensive Glossary of Key Terms}
+%============================================================
+
+\begin{table}[H]
+\centering
+\caption{Glossary of core scientific terms and technical concepts}
+\label{tab:glossary}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{l X}
+\toprule
+\textbf{Term} & \textbf{Detailed Definition} \\
+\midrule
+\textbf{Chain-of-Thought (CoT)} & Writing out step-by-step intermediate reasoning derivations before generating the final code solution. \\
+\textbf{RLVR} & Reinforcement Learning with Verifiable Rewards; training policy using objective automated unit-test pass/fail signals ($0/1$). \\
+\textbf{RLIR} & Reinforcement Learning with Intrinsic Rewards; self-rewarding RL where the model evaluates its own reasoning (deprioritized due to reward hacking). \\
+\textbf{Distillation (SFT)} & Supervised fine-tuning of a smaller student model on reasoning traces produced by an expert teacher model (e.g., DeepSeek-R1). \\
+\textbf{SFT-then-RLVR} & Two-stage paradigm: SFT seeds the complex reasoning capability, then RLVR refines and hardens the policy against failure. \\
+\textbf{Sparse Reward Trap} & Training failure occurring when an RL policy rarely succeeds on its own, leaving the optimizer without positive gradient signal. \\
+\textbf{Reward Hacking} & A model finding superficial shortcuts that pass unit tests without synthesizing genuine invariant algorithmic logic. \\
+\textbf{LoRA / QLoRA} & Parameter-Efficient Fine-Tuning updating low-rank adapter matrices ($r=16$) over 4-bit quantized base weights on a single GPU. \\
+\textbf{Diagnose-and-Improve} & An empirical research methodology that first pinpoints failure modes via diagnostic probing, applies targeted training interventions, and proves collapse point delay. \\
+\textbf{Per-Token Intelligence} & Metric measuring reasoning density: ratio of accuracy achieved per generated reasoning token~\cite{ockbench}. \\
+\textbf{Overthinking Tax} & Excessive generation of redundant reasoning tokens that fails to improve final execution accuracy~\cite{thinking_longer}. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%============================================================
+\section{Summary Table \& Project Deliverables}
+%============================================================
+
+\begin{table}[H]
+\centering
+\caption{Executive summary matrix of the research project}
+\label{tab:summary_matrix}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{l X}
+\toprule
+\textbf{Project Name} & \textbf{Reduction Ladder for Code: Measuring Reasoning vs.\ Pattern-Matching in Code LLMs/SLMs} \\
+\textbf{Paper Type} & Benchmark \& Evaluation Methodology with Diagnose-and-Improve Intervention Extension \\
+\textbf{Target Domain} & Programmatic Code Generation (Algorithmic & Enterprise Infrastructure Tasks) \\
+\textbf{Core Benchmarks} & HumanEval (L0) + EvoEval Suite (L1--L5) + LiveCodeBench (Temporal Control) \\
+\textbf{Key Novelty} & Inverse of Code-Rewriting (Invariance under Surface Mutation) + Inv-GRPO Paired Optimization \\
+\textbf{Primary Deliverables} & Verified JSONL Ladder Cache, Clean Architecture Evaluation Engine, 6 Trained Checkpoints, Final Research Report \\
 \bottomrule
 \end{tabularx}
 \end{table}
