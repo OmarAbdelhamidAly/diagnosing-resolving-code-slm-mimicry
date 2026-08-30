@@ -14,7 +14,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage{microtype}
-\usepackage[left=2.5cm, right=2.5cm, top=3cm, bottom=3cm]{geometry}
+\usepackage[left=2.2cm, right=2.2cm, top=2.8cm, bottom=2.8cm]{geometry}
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{amsmath, amssymb}
@@ -36,6 +36,7 @@
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{setspace}
+\allowdisplaybreaks
 \usepackage{parskip}
 \usepackage{soul}
 \usepackage{pifont}
@@ -361,46 +362,50 @@ Our methodology directly builds upon six foundational papers that formalized rea
 
 Table~\ref{tab:mitigation_landscape} synthesizes the mitigation landscape:
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
 \caption{Taxonomy of state-of-the-art mitigation paradigms for code reasoning}
 \label{tab:mitigation_landscape}
-\renewcommand{\arraystretch}{1.4}
+\renewcommand{\arraystretch}{1.3}
+{\small
 \begin{tabularx}{\textwidth}{l X X X}
 \toprule
-\textbf{Mitigation Paradigm} & \textbf{Core Mechanism} & \textbf{Primary Strength} & \textbf{Key Limitation / Bottleneck} \\
+\textbf{Paradigm} & \textbf{Core Mechanism} & \textbf{Primary Strength} & \textbf{Key Limitation} \\
 \midrule
-\textbf{Process Rewards (PRMs)~\cite{codeprm, execverify}} & Step-level verifier scoring during reasoning. & Dense feedback prevents reward hacking. & Requires expensive step annotations; high training compute. \\
-\textbf{AST Invariance~\cite{treediff, veriseek}} & Enforce syntax tree similarity (\texttt{simAST}) in loss / reward. & Prevents lexical overfitting; guarantees syntax. & Limited to syntactic mutations; misses high-level story reframing. \\
-\textbf{Self-Correction~\cite{supercorrect}} & Multi-turn execution feedback with compiler error traces. & Dynamic error recovery at test time. & High inference latency; impractical for real-time edge SLMs. \\
-\textbf{Information Bottleneck~\cite{ibft_memorization, ibro_rlvr}} & Regularize hidden states to minimize mutual info $I(X; Z)$. & Strong theoretical guarantee against memorisation. & Training instability and hyperparameter sensitivity on SLMs. \\
-\textbf{Inv-GRPO (Ours)} & \textbf{Cross-perturbation paired sampling + Consistency Regularizer.} & \textbf{Zero inference overhead; directly attacks shortcut learning.} & \textbf{Requires paired perturbation batches during training.} \\
+PRMs~\cite{codeprm, execverify} & Step-level verifier scoring. & Dense feedback prevents reward hacking. & Expensive step annotations. \\
+AST Inv.~\cite{treediff, veriseek} & Syntax tree similarity in reward. & Prevents lexical overfitting. & Misses high-level reframing. \\
+Self-Correct~\cite{supercorrect} & Multi-turn compiler feedback. & Dynamic error recovery. & High inference latency. \\
+Info. Bottleneck~\cite{ibft_memorization, ibro_rlvr} & Minimize mutual info $I(X;Z)$. & Theoretical anti-memorisation. & Training instability on SLMs. \\
+\textbf{Inv-GRPO (Ours)} & \textbf{Paired sampling + Consistency.} & \textbf{Zero inference overhead.} & \textbf{Paired batches required.} \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 %============================================================
 \section{The Reduction Ladder Framework (Code Domain)}
 %============================================================
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
 \caption{Reduction Ladder levels, transformation operations, and probing objectives}
 \label{tab:ladder}
-\renewcommand{\arraystretch}{1.5}
-\begin{tabularx}{\textwidth}{c l l X}
+\renewcommand{\arraystretch}{1.35}
+{\small
+\begin{tabularx}{\textwidth}{c l X X}
 \toprule
-\textbf{Level} & \textbf{Transformation Type} & \textbf{Hugging Face Source} & \textbf{Probing Objective \& Test Focus} \\
+\textbf{Level} & \textbf{Transformation} & \textbf{HuggingFace Source} & \textbf{Probing Objective} \\
 \midrule
-L0 & Verbatim Classic Problem & \texttt{openai/openai\_humaneval} & Raw memorization / template retrieval baseline. \\
-L1 & Format / Subtle Shift & \texttt{evoeval/EvoEval\_subtle} & Robustness to trivial formatting \& specification shifts. \\
-L2 & Structural ToolUse Shift & \texttt{evoeval/EvoEval\_tool\_use} & Helper function integration \& API abstraction changes. \\
-L3 & Narrative Reframing & \texttt{evoeval/EvoEval\_creative} & Recognition of algorithmic logic under novel storytelling. \\
-L4 & Constraint Augmentation & \texttt{evoeval/EvoEval\_difficult} & Forces algorithmic adaptation rather than retrieval. \\
-L5 & Concept Combination & \texttt{evoeval/EvoEval\_combine} & Genuine transfer \& multi-concept composition. \\
+L0 & Verbatim Classic & \texttt{openai/openai\_humaneval} & Raw memorization / template retrieval baseline. \\
+L1 & Format / Subtle & \texttt{evoeval/EvoEval\_subtle} & Robustness to formatting \& specification shifts. \\
+L2 & ToolUse Shift & \texttt{evoeval/EvoEval\_tool\_use} & Helper function integration \& API abstraction. \\
+L3 & Narrative Reframe & \texttt{evoeval/EvoEval\_creative} & Algorithmic logic under novel storytelling. \\
+L4 & Constraint Added & \texttt{evoeval/EvoEval\_difficult} & Algorithmic adaptation rather than retrieval. \\
+L5 & Concept Combine & \texttt{evoeval/EvoEval\_combine} & Genuine transfer \& multi-concept composition. \\
 \midrule
-Ctrl & Contamination Control & \texttt{livecodebench/code\_gen\_lite} & Clean post-cutoff generalization verification. \\
+Ctrl & Contamination Ctrl & \texttt{livecodebench/code\_gen\_lite} & Clean post-cutoff generalization check. \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 
 \subsection{4.1 Inverse Transformation: Reduction Ladder vs.\ Code-Rewriting (MRI)}
@@ -488,45 +493,49 @@ A critical question for any benchmark-driven research is: \emph{why this specifi
 
 Table~\ref{tab:paper_models} surveys the model selections across our foundational and comparison literature, demonstrating that our choice aligns with --- and extends --- the established experimental practice.
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
 \caption{Model selections across reference papers and alignment with our experimental design}
 \label{tab:paper_models}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabularx}{\textwidth}{l l X}
+\renewcommand{\arraystretch}{1.25}
+{\footnotesize
+\begin{tabularx}{\textwidth}{l X X}
 \toprule
 \textbf{Paper / Project} & \textbf{Models Evaluated} & \textbf{Relevance to Our Work} \\
 \midrule
-\textbf{DeepSeek-R1 (2025)} & \texttt{Qwen-1.5B}, \texttt{Qwen-7B}, \texttt{Qwen-14B}, \texttt{Qwen-32B}, \texttt{Llama-8B}, \texttt{Llama-70B} & Established \texttt{Qwen-1.5B} as the canonical small-model distillation target for reasoning research. Our primary target is identical. \\
-\textbf{EvoEval (EMNLP 2024)~\cite{evoeval}} & \texttt{DeepSeek-Coder-1.3B/6.7B/33B}, \texttt{CodeLlama-7B/13B/34B}, \texttt{StarCoder2-3B/7B/15B}, GPT-4 & Benchmarked 57 models; documented 38--40\% mean degradation across perturbation types. Our ladder directly extends their L1--L5 transformations. \\
-\textbf{Memorize or Generalize?~\cite{memorize_or_generalize}} & \texttt{Qwen2.5-Coder-1.5B/7B}, \texttt{DeepSeek-V2-Lite}, \texttt{Llama-3-8B}, \texttt{StarCoder2-7B} & Used \texttt{Qwen2.5-Coder-1.5B} as a primary baseline for their Memorization Risk Index (MRI) --- our MRI computation is directly comparable. \\
-\textbf{SuperCorrect~\cite{supercorrect}} & \texttt{Qwen2.5-Coder-1.5B/7B}, \texttt{DeepSeek-Coder-1.3B/6.7B}, \texttt{CodeLlama-7B/13B} & Applied contrastive SFT corrections on \texttt{Qwen2.5-Coder-1.5B}; our Arm~2 (Contrastive-SFT) directly builds on their methodology with identical model checkpoints. \\
-\textbf{TreeDiff / VeriSeek~\cite{treediff, veriseek}} & \texttt{Qwen2.5-Coder-1.5B/7B}, \texttt{DeepSeek-Coder-1.3B} & Demonstrated AST-guided rewards on sub-2B code models; our Arm~3 (AST-RL) reproduces and extends their approach. \\
-\textbf{CodePRM / ExecVerify~\cite{codeprm, execverify}} & \texttt{Qwen2.5-Coder-7B}, \texttt{DeepSeek-Coder-6.7B}, \texttt{Llama-3-8B-Code} & Applied process reward models to code verification; our Arm~4 (Step-RLVR) adapts their stepwise verification to our ladder framework. \\
-\textbf{OckBench~\cite{ockbench}} & \texttt{Qwen2.5-1.5B/7B/72B}, \texttt{Llama-3-8B/70B}, GPT-4o, Claude-3.5 & Established per-token intelligence metrics across model scales; our token efficiency analysis follows their methodology. \\
-\textbf{LiveCodeBench~\cite{livecodebench}} & 50+ models including \texttt{Qwen2.5-Coder} family, \texttt{DeepSeek}, GPT-4o & Provides our contamination-free temporal control set with pre-existing Qwen baselines for direct comparison. \\
+DeepSeek-R1 (2025) & Qwen-1.5B, 7B, 14B, 32B; Llama-8B, 70B & Established Qwen-1.5B as the canonical SLM distillation target. Our primary target is identical. \\
+EvoEval~\cite{evoeval} & DeepSeek-Coder 1.3--33B; CodeLlama 7--34B; StarCoder2 3--15B; GPT-4 & Benchmarked 57 models; 38--40\% degradation. Our ladder extends their L1--L5. \\
+MRI Paper~\cite{memorize_or_generalize} & Qwen2.5-Coder 1.5B/7B; DeepSeek-V2-Lite; Llama-3-8B & Used Qwen2.5-Coder-1.5B for MRI --- our MRI is directly comparable. \\
+SuperCorrect~\cite{supercorrect} & Qwen2.5-Coder 1.5B/7B; DeepSeek-Coder 1.3B/6.7B & Contrastive SFT on Qwen-1.5B; our Arm~2 builds on their method. \\
+TreeDiff/VeriSeek~\cite{treediff, veriseek} & Qwen2.5-Coder 1.5B/7B; DeepSeek-Coder-1.3B & AST-guided rewards on sub-2B models; our Arm~3 extends this. \\
+CodePRM/ExecVerify~\cite{codeprm, execverify} & Qwen2.5-Coder-7B; DeepSeek-Coder-6.7B; Llama-3-8B & Process rewards for code; our Arm~4 adapts their approach. \\
+OckBench~\cite{ockbench} & Qwen2.5 1.5B/7B/72B; Llama-3 8B/70B; GPT-4o & Per-token intelligence metrics; our token analysis follows this. \\
+LiveCodeBench~\cite{livecodebench} & 50+ models incl.\ Qwen2.5-Coder, DeepSeek, GPT-4o & Contamination-free control set with Qwen baselines. \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 
 \subsection{6.3 Three-Tier Capacity Axis}
 
 To rigorously test the capacity--memorization hypothesis~\cite{too_big_to_think}, our evaluation spans three parameter tiers:
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
 \caption{Three-tier model capacity axis for systematic evaluation}
 \label{tab:capacity_tiers}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabularx}{\textwidth}{l l l X}
+\renewcommand{\arraystretch}{1.3}
+{\small
+\begin{tabularx}{\textwidth}{l l c X}
 \toprule
-\textbf{Tier} & \textbf{Model} & \textbf{Parameters} & \textbf{Scientific Role in This Research} \\
+\textbf{Tier} & \textbf{Model} & \textbf{Params} & \textbf{Scientific Role} \\
 \midrule
-\textbf{Tier~1 (Edge SLM)} & \texttt{Qwen2.5-Coder-1.5B-Instruct} & 1.5B & Primary experimental target. All six model variants (M1--M6) are trained and evaluated at this scale. The capacity bottleneck maximizes diagnostic sensitivity to shortcut learning. \\
-\textbf{Tier~2 (Mid-Range)} & \texttt{Qwen2.5-Coder-7B-Instruct} & 7B & Untreated capacity control. Evaluated on the full ladder \emph{without any mitigation} to measure how much raw parameter scaling alone delays collapse, isolating the effect of our interventions from mere capacity expansion. \\
-\textbf{Tier~3 (Frontier)} & Frontier LLM (API) & $>$100B & Theoretical reasoning ceiling. Establishes the upper bound of achievable performance, anchoring the y-axis of all comparative plots and providing the target $\ell^*$ for our mitigation arms to approach. \\
+Tier~1 (Edge SLM) & Qwen2.5-Coder-1.5B-Instruct & 1.5B & Primary target. All six variants (M1--M6) trained here. Capacity bottleneck maximizes diagnostic sensitivity. \\
+Tier~2 (Mid-Range) & Qwen2.5-Coder-7B-Instruct & 7B & Untreated capacity control. Measures how scaling alone delays collapse without mitigation. \\
+Tier~3 (Frontier) & Frontier LLM (API) & $>$100B & Reasoning ceiling. Upper bound for comparative plots and target $\ell^*$. \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 
 %============================================================
@@ -539,22 +548,24 @@ A central requirement for publishable research is demonstrating \emph{how} our r
 
 We compare our results against prior work along five orthogonal axes, ensuring comprehensive coverage:
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
 \caption{Five-axis comparison framework against prior literature}
 \label{tab:comparison_axes}
-\renewcommand{\arraystretch}{1.4}
+\renewcommand{\arraystretch}{1.25}
+{\small
 \begin{tabularx}{\textwidth}{c l X X}
 \toprule
 \textbf{Axis} & \textbf{Metric} & \textbf{What It Measures} & \textbf{Compared Against} \\
 \midrule
-\textbf{A1} & Pass@1 (L0--L5) & Raw deterministic accuracy per ladder level & EvoEval reported scores~\cite{evoeval}; MRI paper baselines~\cite{memorize_or_generalize}; LiveCodeBench leaderboard~\cite{livecodebench} \\
-\textbf{A2} & Collapse Point ($\ell^*$) & Earliest level where accuracy drops below 50\% & EvoEval degradation profiles (median $\ell^* \approx$ L2 for sub-3B models) \\
-\textbf{A3} & Error Taxonomy (\%) & Distribution of on-path / off-path / wrong-template failures & Depth Ceiling error categories~\cite{depth_ceiling}; Noisy Code Tasks eager-matching rates~\cite{noisy_code_tasks} \\
-\textbf{A4} & Token Efficiency ($\tau$) & Reasoning tokens per correct solution (Per-Token Intelligence) & OckBench density ratios~\cite{ockbench}; Thinking Longer overthinking rates~\cite{thinking_longer} \\
-\textbf{A5} & MRI Score & Memorization Risk Index quantifying template reliance & Memorize-or-Generalize reported MRI values~\cite{memorize_or_generalize} \\
+A1 & Pass@1 (L0--L5) & Raw accuracy per ladder level & EvoEval~\cite{evoeval}; MRI~\cite{memorize_or_generalize}; LiveCodeBench~\cite{livecodebench} \\
+A2 & Collapse Point ($\ell^*$) & First level with accuracy ${<}50\%$ & EvoEval degradation ($\ell^*{\approx}$L2 for sub-3B) \\
+A3 & Error Taxonomy & On/off-path \& wrong-template \% & Depth Ceiling~\cite{depth_ceiling}; Noisy Tasks~\cite{noisy_code_tasks} \\
+A4 & Token Efficiency ($\tau$) & Tokens per correct solution & OckBench~\cite{ockbench}; Thinking Longer~\cite{thinking_longer} \\
+A5 & MRI Score & Memorization Risk Index & MRI paper values~\cite{memorize_or_generalize} \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 
 \subsection{7.2 Direct Reproduction \& Extension of EvoEval Baselines}
@@ -578,25 +589,27 @@ EvoEval~\cite{evoeval} reported degradation profiles for 57~models across five p
 
 Table~\ref{tab:cross_paper} formalizes the exact mapping between our evaluation outputs and the metrics reported in each reference paper, enabling reviewers to verify comparability.
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
 \caption{Cross-paper metric alignment: mapping our outputs to prior reported results}
 \label{tab:cross_paper}
-\renewcommand{\arraystretch}{1.35}
+\renewcommand{\arraystretch}{1.2}
+{\footnotesize
 \begin{tabularx}{\textwidth}{l l X X}
 \toprule
-\textbf{Reference Paper} & \textbf{Their Metric} & \textbf{Our Equivalent Output} & \textbf{Comparison Protocol} \\
+\textbf{Reference} & \textbf{Their Metric} & \textbf{Our Equivalent} & \textbf{Comparison Protocol} \\
 \midrule
-EvoEval~\cite{evoeval} & Pass@1 per perturbation type & Pass@1 per ladder level (L1--L5) & Direct comparison: same dataset splits, same model family. Report absolute delta. \\
-MRI Paper~\cite{memorize_or_generalize} & Memorization Risk Index & MRI = Similarity $\times$ max(0, $\Delta$Pass@1) & Compute on identical L0$\to$L3 pairs; compare MRI reduction after mitigation. \\
-Depth Ceiling~\cite{depth_ceiling} & On-path / Off-path error ratio & On-path / Off-path / Wrong-Template \% & Extend their binary taxonomy with our third ``Wrong-Template'' category. Report category shift after mitigation. \\
-OckBench~\cite{ockbench} & Per-Token Intelligence ratio & Accuracy / Mean Reasoning Tokens $\times$ 100 & Compute at each ladder level; compare density curves against their reported SLM profiles. \\
-Thinking Longer~\cite{thinking_longer} & Overthinking Tax (\% excess tokens on failures) & $(\bar{\tau}_{\text{fail}} - \bar{\tau}_{\text{pass}}) / \bar{\tau}_{\text{pass}} \times 100$ & Report per-level; compare against their finding of 45\% overhead on incorrect attempts. \\
-LiveCodeBench~\cite{livecodebench} & Pass@1 on post-cutoff problems & Pass@1 on \texttt{code\_gen\_lite} control set & Validates zero-contamination; compare against their published leaderboard for Qwen2.5-Coder. \\
-GSM-Symbolic~\cite{gsm_symbolic} & Accuracy drop under symbolic perturbation & Consistency Delta ($\Delta_c$) under neutral surface variation & Analogous methodology applied to code domain; compare magnitude of perturbation sensitivity. \\
-Flip-Flop~\cite{flip_flop_consistency} & Accuracy swing under variable renaming & $\Delta_c$ between L1 and L2 & Direct comparison of neutral-perturbation sensitivity magnitude. \\
+EvoEval~\cite{evoeval} & Pass@1 per perturbation & Pass@1 per level (L1--L5) & Same splits, same model family; report $\Delta$. \\
+MRI~\cite{memorize_or_generalize} & Memorization Risk Index & MRI = Sim $\times$ max(0,$\Delta$P@1) & Identical L0$\to$L3 pairs; compare reduction. \\
+Depth Ceil.~\cite{depth_ceiling} & On/off-path ratio & On/off-path + Wrong-Template \% & Extend binary with 3rd category. \\
+OckBench~\cite{ockbench} & Per-Token Intelligence & Acc / Mean Tokens $\times$ 100 & Compare density curves per level. \\
+Think Longer~\cite{thinking_longer} & Overthinking Tax & $(\bar{\tau}_{\text{fail}}{-}\bar{\tau}_{\text{pass}})/\bar{\tau}_{\text{pass}}$ & Compare vs.\ their 45\% overhead. \\
+LCB~\cite{livecodebench} & Post-cutoff Pass@1 & Pass@1 on \texttt{code\_gen\_lite} & Zero-contamination validation. \\
+GSM-Sym~\cite{gsm_symbolic} & Symbolic perturbation drop & Consistency Delta ($\Delta_c$) & Code-domain analogue comparison. \\
+Flip-Flop~\cite{flip_flop_consistency} & Variable renaming swing & $\Delta_c$ between L1 \& L2 & Sensitivity magnitude comparison. \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 
 \subsection{7.4 Statistical Rigor \& Reporting Standards}
@@ -617,21 +630,23 @@ To ensure our comparisons are scientifically defensible:
 
 To avoid single-method bias and rigorously explore the solution space, we formulate four prioritized experimental arms:
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
 \caption{Prioritized Multi-Arm mitigation framework for SLM code reasoning}
 \label{tab:mitigation_arms}
-\renewcommand{\arraystretch}{1.4}
+\renewcommand{\arraystretch}{1.3}
+{\small
 \begin{tabularx}{\textwidth}{c l l X}
 \toprule
-\textbf{Priority} & \textbf{Mitigation Arm} & \textbf{Core Paradigm} & \textbf{Implementation Mechanism} \\
+\textbf{Pri.} & \textbf{Arm} & \textbf{Paradigm} & \textbf{Implementation Mechanism} \\
 \midrule
-\textbf{P1 (Primary)} & \textbf{Inv-GRPO} & Multi-View Invariance RL & Cross-perturbation paired sampling with consistency reward $\mathcal{R}_{\text{consistency}}$. \\
-\textbf{P2 (SFT)} & \textbf{Contrastive-SFT} & Negative Rejection SFT & Fine-tuning on positive CoT paired with explicit negative template rejection traces. \\
-\textbf{P3 (Syntax)} & \textbf{AST-RL} & Structural Syntax Invariance & Abstract Syntax Tree similarity (\texttt{simAST}) reward during policy optimization. \\
-\textbf{P4 (Process)} & \textbf{Step-RLVR} & Intermediate Process RL & Stepwise execution trace verification on intermediate function contracts. \\
+P1 & \textbf{Inv-GRPO} & Invariance RL & Cross-perturbation paired sampling with $\mathcal{R}_{\text{consistency}}$. \\
+P2 & \textbf{Contrastive-SFT} & Rejection SFT & Positive CoT paired with negative template rejection traces. \\
+P3 & \textbf{AST-RL} & Syntax Invariance & AST similarity (\texttt{simAST}) reward during optimization. \\
+P4 & \textbf{Step-RLVR} & Process RL & Stepwise execution trace verification on function contracts. \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 
 \subsection{8.1 Arm 1 (Priority 1 --- Primary): Invariance-Regularized GRPO (Inv-GRPO)}
@@ -662,74 +677,77 @@ Building upon CodePRM~\cite{codeprm} and ExecVerify~\cite{execverify}, this arm 
 
 \subsection{8.5 Intervention Comparison: Distillation vs.\ RLVR vs.\ RLIR}
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
 \caption{Comparative analysis of training intervention paradigms}
 \label{tab:interventions}
-\renewcommand{\arraystretch}{1.4}
+\renewcommand{\arraystretch}{1.3}
+{\small
 \begin{tabularx}{\textwidth}{l X X X}
 \toprule
-\textbf{Dimension} & \textbf{1 --- Distillation} & \textbf{2 --- RLVR} & \textbf{3 --- RLIR (Intrinsic)} \\
+\textbf{Dimension} & \textbf{Distillation} & \textbf{RLVR} & \textbf{RLIR (Intrinsic)} \\
 \midrule
-\textbf{Reward Source} & External teacher model (expert CoT traces). & Automatic unit-test sandbox verifier ($0/1$). & Model judges itself (self-rewarding loop). \\
-\textbf{Adds New Capability?} & \textbf{Yes} (seeding new exploration paths, per Paper 2). & \textbf{Mostly No} (raises sampling efficiency of existing latent skills). & \textbf{No} (focuses on consistency, not new logic). \\
-\textbf{Main Bottleneck} & Dependent on proprietary LLM APIs; risks mimicking rather than reasoning. & Reward hacking; sparse signals on long algorithmic chains. & Collapse into degenerate/trivial consensus states. \\
+\textbf{Reward} & External teacher CoT. & Unit-test sandbox ($0/1$). & Self-rewarding loop. \\
+\textbf{New Capability?} & \textbf{Yes} (new paths). & \textbf{Mostly No} (sampling eff.). & \textbf{No} (consistency only). \\
+\textbf{Bottleneck} & API dependency; mimicry risk. & Reward hacking; sparse signal. & Degenerate consensus. \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 
 %============================================================
 \section{Hardware Feasibility \& VRAM Budget (RTX 3070 8GB)}
 %============================================================
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
-\caption{Hardware requirements and VRAM budget (RTX 3070 / 8GB VRAM)}
+\caption{Hardware requirements and VRAM budget (RTX 3070 / 8\,GB VRAM)}
 \label{tab:hardware}
-\renewcommand{\arraystretch}{1.35}
+\renewcommand{\arraystretch}{1.3}
+{\small
 \begin{tabularx}{\textwidth}{l l X}
 \toprule
-\textbf{Stage} & \textbf{VRAM Budget} & \textbf{Optimization Strategy} \\
+\textbf{Stage} & \textbf{VRAM} & \textbf{Optimization Strategy} \\
 \midrule
-Inference (Eval) & $\approx$ 1.1 GB & 4-bit NF4 precision, batch size 1 (empirically verified) \\
-QLoRA / Contrastive SFT & $\approx$ 6.5 GB & PEFT LoRA adapters ($r=16, \alpha=32$), gradient accumulation = 4 \\
-GRPO / AST-RL / Inv-GRPO & $\approx$ 7.2 GB & Gradient checkpointing, group size $G=4$, interleaved rollouts \\
+Inference (Eval) & {$\approx$}1.1\,GB & 4-bit NF4 precision, batch size 1 (verified) \\
+QLoRA / SFT & {$\approx$}6.5\,GB & PEFT LoRA ($r{=}16, \alpha{=}32$), grad.\ accum.\ = 4 \\
+GRPO / AST-RL & {$\approx$}7.2\,GB & Gradient checkpointing, $G{=}4$, interleaved rollouts \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 
 %============================================================
 \section{Exhaustive 3-Month (12-Week) Execution Roadmap}
 %============================================================
 
-\begin{table}[H]
+\begin{table}[ht!]
 \centering
 \caption{Exhaustive 12-week research roadmap across 3 calendar months}
 \label{tab:detailed_timeline}
-\renewcommand{\arraystretch}{1.35}
+\renewcommand{\arraystretch}{1.2}
+{\footnotesize
 \begin{tabularx}{\textwidth}{c c l X}
 \toprule
-\textbf{Month} & \textbf{Week} & \textbf{Research Stage} & \textbf{Weekly Deliverables \& Key Technical Tasks} \\
+\textbf{Mo.} & \textbf{Wk} & \textbf{Stage} & \textbf{Deliverables \& Tasks} \\
 \midrule
-\multirow{4}{*}{\textbf{Month 1}} 
-& \textbf{W1} & Ingestion \& Setup & Environment setup in \texttt{unsloth\_env}; Ingest L0--L5 datasets from Hugging Face into normalized JSONL cache. \\
-& \textbf{W2} & Sandbox Hardening & Implement subprocess sandbox with timeout guarding; 100\% verification of canonical solutions. \\
-& \textbf{W3} & Baseline Inference & 4-bit NF4 evaluation of \texttt{Qwen2.5-Coder-1.5B} and \texttt{7B}; Pass@1 and Pass@5 inference across all L0--L5 levels. \\
-& \textbf{W4} & Collapse Diagnosis & Automated error taxonomy classification (on-path / off-path / wrong-template); Calculate baseline $\ell^*$, Ladder AUC, and MRI. \\
+1 & W1 & Ingestion \& Setup & Environment setup; ingest L0--L5 datasets into JSONL cache. \\
+1 & W2 & Sandbox Hardening & Subprocess sandbox with timeout; 100\% solution verification. \\
+1 & W3 & Baseline Inference & NF4 eval of Qwen 1.5B \& 7B; Pass@1/5 across L0--L5. \\
+1 & W4 & Collapse Diagnosis & Error taxonomy; calculate $\ell^*$, AUC, MRI. \\
 \midrule
-\multirow{4}{*}{\textbf{Month 2}} 
-& \textbf{W5} & SFT Data Curation & Curate 10K reasoning trajectories from \texttt{OpenCodeReasoning}; Synthesize negative shortcut rejection traces for Contrastive-SFT. \\
-& \textbf{W6} & SFT Model Training & Train Arm 2A (Vanilla SFT $\to$ M2) and Arm 2B (Contrastive-SFT $\to$ M3) via 4-bit QLoRA ($r=16, \alpha=32$). \\
-& \textbf{W7} & SFT Ladder Probing & L0--L5 evaluation of SFT checkpoints; Compute MRI to measure template-mimicry bias; Cross-paper comparison with SuperCorrect results. \\
-& \textbf{W8} & Standard RLVR & Train Arm 0 (Vanilla GRPO $\to$ M4) and Arm 3 (AST-RL $\to$ M5) with \texttt{simAST} tree-edit rewards. \\
+2 & W5 & SFT Data Curation & 10K reasoning trajectories; negative rejection traces. \\
+2 & W6 & SFT Training & Vanilla SFT (M2) \& Contrastive-SFT (M3) via QLoRA. \\
+2 & W7 & SFT Probing & L0--L5 eval of SFT checkpoints; MRI; SuperCorrect comparison. \\
+2 & W8 & Standard RLVR & Vanilla GRPO (M4) \& AST-RL (M5) with \texttt{simAST} rewards. \\
 \midrule
-\multirow{4}{*}{\textbf{Month 3}} 
-& \textbf{W9} & Inv-GRPO Training & Implement paired cross-perturbation sampling ($x_{L0}, x_{L2}$); Train Arm 1 (Inv-GRPO $\to$ M6) with consistency rewards. \\
-& \textbf{W10} & Process RL \& Tuning & Train Arm 4 (Step-RLVR with sub-function verification); Hyperparameter optimization over $\lambda, \gamma$. \\
-& \textbf{W11} & Full Suite Benchmarking & Cross-evaluate all 6 models (M1--M6) on L0--L5 + LiveCodeBench control; Generate cross-paper comparison tables. \\
-& \textbf{W12} & Synthesis \& Delivery & Compile final publication with all comparative figures, present findings to Dr.\ Ghada. \\
+3 & W9 & Inv-GRPO & Paired cross-perturbation sampling; train M6 with $\mathcal{R}_{\text{cons}}$. \\
+3 & W10 & Process RL & Step-RLVR with sub-function verification; tune $\lambda, \gamma$. \\
+3 & W11 & Full Benchmarking & All 6 models on L0--L5 + LiveCodeBench; comparison tables. \\
+3 & W12 & Synthesis & Final publication; present to Dr.\ Ghada. \\
 \bottomrule
 \end{tabularx}
+}
 \end{table}
 
 %============================================================
