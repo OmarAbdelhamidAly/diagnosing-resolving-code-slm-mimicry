@@ -1,31 +1,20 @@
-"""Concrete implementation of ICodeExecutor using isolated worker processes with timeouts."""
+"""Concrete implementation of ICodeExecutor using isolated native subprocesses with UTF-8 support."""
 
+import os
+import sys
 import time
-import multiprocessing
-from typing import Tuple
+import subprocess
+from typing import Tuple, Optional
 from src.core.interfaces import ICodeExecutor
 from src.core.entities import ExecutionResult
 
 
-def _worker_exec(code_str: str, entry_point: str, queue: multiprocessing.Queue):
-    """Isolated subprocess worker executing code against test assertions."""
-    try:
-        scope = {}
-        exec(code_str, scope)
-        if "check" in scope and entry_point in scope:
-            scope["check"](scope[entry_point])
-        queue.put(("PASS", "Execution passed all assertions"))
-    except AssertionError as e:
-        queue.put(("FAIL", f"AssertionError: {e}"))
-    except Exception as e:
-        queue.put(("ERROR", f"{type(e).__name__}: {e}"))
+class SubprocessSandbox(ICodeExecutor):
+    """Executes generated code in an isolated native subprocess with strict time guarding and UTF-8 encoding."""
 
-
-class MultiprocessSandbox(ICodeExecutor):
-    """Executes generated code in an isolated subprocess with strict time guarding."""
-
-    def __init__(self, default_timeout: float = 5.0):
+    def __init__(self, default_timeout: float = 5.0, python_executable: Optional[str] = None):
         self.default_timeout = default_timeout
+        self.python_executable = python_executable or sys.executable
 
     def execute(
         self,
@@ -36,43 +25,60 @@ class MultiprocessSandbox(ICodeExecutor):
         timeout_seconds: float = 5.0
     ) -> ExecutionResult:
         timeout = timeout_seconds or self.default_timeout
+        
+        # Build complete executable script
         full_code = f"{prompt}\n{solution}\n{test}\n"
-        if entry_point:
+        if "check(" not in test and entry_point:
             full_code += f"\ncheck({entry_point})\n"
 
-        queue = multiprocessing.Queue()
-        process = multiprocessing.Process(
-            target=_worker_exec,
-            args=(full_code, entry_point, queue)
-        )
-
         start_time = time.perf_counter()
-        process.start()
-        process.join(timeout=timeout)
-        elapsed = time.perf_counter() - start_time
+        try:
+            # Stream code via stdin to handle arbitrary sizes and bypass Windows CLI argument limits
+            proc = subprocess.run(
+                [self.python_executable, "-X", "utf8", "-c", "import sys; exec(sys.stdin.read())"],
+                input=full_code,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=timeout
+            )
+            elapsed = time.perf_counter() - start_time
 
-        if process.is_alive():
-            process.terminate()
-            process.join(timeout=1.0)
+            if proc.returncode == 0:
+                return ExecutionResult(
+                    passed=True,
+                    status="PASS",
+                    error_message="Execution passed all assertions",
+                    execution_time_seconds=elapsed
+                )
+            else:
+                stderr_msg = proc.stderr.strip()
+                status = "FAIL" if "AssertionError" in stderr_msg else "ERROR"
+                return ExecutionResult(
+                    passed=False,
+                    status=status,
+                    error_message=stderr_msg,
+                    execution_time_seconds=elapsed
+                )
+
+        except subprocess.TimeoutExpired:
+            elapsed = time.perf_counter() - start_time
             return ExecutionResult(
                 passed=False,
                 status="TIMEOUT",
                 error_message=f"Execution exceeded timeout limit ({timeout}s)",
                 execution_time_seconds=elapsed
             )
-
-        if not queue.empty():
-            status, msg = queue.get()
-            return ExecutionResult(
-                passed=(status == "PASS"),
-                status=status,
-                error_message=msg,
-                execution_time_seconds=elapsed
-            )
-        else:
+        except Exception as e:
+            elapsed = time.perf_counter() - start_time
             return ExecutionResult(
                 passed=False,
                 status="CRASH",
-                error_message="Subprocess crashed or exited without return value",
+                error_message=f"Sandbox process failed: {type(e).__name__}: {e}",
                 execution_time_seconds=elapsed
             )
+
+
+# Backward compatibility alias
+MultiprocessSandbox = SubprocessSandbox
