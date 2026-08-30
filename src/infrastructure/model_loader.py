@@ -1,8 +1,24 @@
 """Model inference runner using 4-bit NF4 BitsAndBytes quantization."""
 
+import os
 import re
 from typing import List, Optional
 import torch
+
+# Ensure HuggingFace caches to drive with ample free space (D: has ~224GB free)
+if os.path.exists("D:\\"):
+    HF_CACHE_DIR = "D:\\hf_cache"
+    os.environ["HF_HOME"] = HF_CACHE_DIR
+    os.environ["TRANSFORMERS_CACHE"] = HF_CACHE_DIR
+    os.environ["HF_DATASETS_CACHE"] = HF_CACHE_DIR
+elif os.path.exists("E:\\"):
+    HF_CACHE_DIR = "E:\\hf_cache"
+    os.environ["HF_HOME"] = HF_CACHE_DIR
+    os.environ["TRANSFORMERS_CACHE"] = HF_CACHE_DIR
+    os.environ["HF_DATASETS_CACHE"] = HF_CACHE_DIR
+else:
+    HF_CACHE_DIR = None
+
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from src.core.interfaces import IModelRunner
 from src.core.exceptions import ModelInferenceError, VRAMExceededError
@@ -16,20 +32,23 @@ class QuantizedModelRunner(IModelRunner):
         model_name_or_path: str = "Qwen/Qwen2.5-Coder-1.5B-Instruct",
         adapter_path: Optional[str] = None,
         device_map: str = "auto",
+        cache_dir: Optional[str] = HF_CACHE_DIR,
     ):
         self.model_name_or_path = model_name_or_path
         self.adapter_path = adapter_path
         self.device_map = device_map
+        self.cache_dir = cache_dir
         self.tokenizer = None
         self.model = None
         self._load_model()
 
     def _load_model(self):
         try:
-            print(f"[MODEL] Loading tokenizer from '{self.model_name_or_path}'...")
+            print(f"[MODEL] Loading tokenizer for '{self.model_name_or_path}' (cache: {self.cache_dir})...")
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name_or_path,
-                trust_remote_code=True
+                trust_remote_code=True,
+                cache_dir=self.cache_dir,
             )
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -46,7 +65,8 @@ class QuantizedModelRunner(IModelRunner):
                 self.model_name_or_path,
                 quantization_config=bnb_config,
                 device_map=self.device_map,
-                trust_remote_code=True
+                trust_remote_code=True,
+                cache_dir=self.cache_dir,
             )
 
             if self.adapter_path:
