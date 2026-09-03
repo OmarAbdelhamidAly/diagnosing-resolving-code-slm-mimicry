@@ -519,8 +519,8 @@ Every experimental pipeline stage is empirically calibrated to run within an **8
 ### 1. Clone & Environment Setup
 ```bash
 # Clone the repository
-git clone https://github.com/OmarAbdelhamidAly/reduction-ladder-for-code.git
-cd reduction-ladder-for-code
+git clone https://github.com/OmarAbdelhamidAly/diagnosing-resolving-code-slm-mimicry.git
+cd diagnosing-resolving-code-slm-mimicry
 
 # Create & activate environment (Windows PowerShell)
 python -m venv .venv
@@ -586,7 +586,7 @@ For interactive inspection, error taxonomy drill-downs, and visualization:
   journal   = {Technical Research Report -- Orange Innovation Labs AI R\&D},
   year      = {2026},
   institution = {Orange Innovation Labs \& Benha University},
-  url       = {https://github.com/OmarAbdelhamidAly/reduction-ladder-for-code}
+  url       = {https://github.com/OmarAbdelhamidAly/diagnosing-resolving-code-slm-mimicry}
 }
 ```
 

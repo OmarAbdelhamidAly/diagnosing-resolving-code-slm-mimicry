@@ -72,3 +72,6 @@ proposal/*.out
 proposal/*.run.xml
 proposal/*.synctex.gz
 proposal/*.toc
+proposal/*.pdf
+*.pdf
+

@@ -5,7 +5,7 @@
 # =====================================================================
 
 project:
-  name: "reduction-ladder-for-code"
+  name: "diagnosing-resolving-code-slm-mimicry"
   authors: ["Omar Abdelhamid", "Nour Walid"]
   supervisor: "Dr. Ghada"
   institution: "Orange Innovation Labs"

@@ -57,7 +57,7 @@ This codebase is designed following **Robert C. Martin's Clean Architecture** pr
 ## 📁 Repository Directory Responsibilities
 
 ```
-reduction-ladder-for-code/
+diagnosing-resolving-code-slm-mimicry/
 │
 ├── config.yaml                            # Global single source of truth for all hyperparameters
 ├── requirements.txt                       # Locked dependencies with exact versions
