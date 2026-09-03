@@ -1,55 +1,55 @@
-# Reduction Ladder for Code & Mitigation 🧠⚡
+# Diagnosing and Resolving Code SLM Mimicry
 
 > **Probing and Resolving Shortcut Learning vs. Transferable Algorithmic Reasoning in Code-Generating SLMs & LLMs**  
 > *A Joint Research Initiative by Orange Innovation Labs (AI R&D Division) & Benha University*
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=for-the-badge&logo=python)](https://www.python.org/)
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4%2B-EE4C2C.svg?style=for-the-badge&logo=pytorch)](https://pytorch.org/)
-[![HuggingFace Transformers](https://img.shields.io/badge/🤗_Transformers-4.44%2B-yellow.svg?style=for-the-badge)](https://huggingface.co/)
-[![Unsloth / BitsAndBytes](https://img.shields.io/badge/⚡_Unsloth-4--bit_NF4-green.svg?style=for-the-badge)](https://github.com/unslothai/unsloth)
+[![HuggingFace Transformers](https://img.shields.io/badge/HuggingFace_Transformers-4.44%2B-yellow.svg?style=for-the-badge)](https://huggingface.co/)
+[![Unsloth / BitsAndBytes](https://img.shields.io/badge/Unsloth-4--bit_NF4-green.svg?style=for-the-badge)](https://github.com/unslothai/unsloth)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)](LICENSE)
 
 ---
 
-## 📑 Comprehensive Table of Contents
+## Table of Contents
 
-1. [Executive Summary & Core Research Questions](#-executive-summary--core-research-questions)
-2. [Foundational Rationale: Why the Code Domain?](#-foundational-rationale-why-the-code-domain)
-3. [The Reduction Ladder Diagnostic Framework (L0–L5 + Control)](#-the-reduction-ladder-diagnostic-framework-l0l5--control)
+1. [Executive Summary & Core Research Questions](#1-executive-summary--core-research-questions)
+2. [Foundational Rationale: Why the Code Domain?](#2-foundational-rationale-why-the-code-domain)
+3. [The Reduction Ladder Diagnostic Framework (L0–L5 + Control)](#3-the-reduction-ladder-diagnostic-framework-l0l5--control)
    - [Ladder Levels & Hugging Face Grounding](#ladder-levels--hugging-face-grounding)
    - [Concrete Transformation Walkthrough (Two Sum across L0–L5)](#concrete-transformation-walkthrough-two-sum-across-l0l5)
    - [Theoretical Contrast: Reduction Ladder vs. Code-Rewriting (MRI)](#theoretical-contrast-reduction-ladder-vs-code-rewriting-mri)
-4. [Comprehensive Literature Taxonomy & Theoretical Foundations](#-comprehensive-literature-taxonomy--theoretical-foundations)
+4. [Comprehensive Literature Taxonomy & Theoretical Foundations](#4-comprehensive-literature-taxonomy--theoretical-foundations)
    - [The Foundational Six Papers: Limits of Reasoning](#the-foundational-six-papers-limits-of-reasoning)
    - [Code-Domain Memorization & Contamination Literature](#code-domain-memorization--contamination-literature)
    - [Multi-Dimensional Evaluation Dimensions Beyond Correctness](#multi-dimensional-evaluation-dimensions-beyond-correctness)
    - [State-of-the-Art Mitigation Paradigms (2024–2026)](#state-of-the-art-mitigation-paradigms-20242026)
-5. [Model Selection Rationale & Capacity Axis](#-model-selection-rationale--capacity-axis)
+5. [Model Selection Rationale & Capacity Axis](#5-model-selection-rationale--capacity-axis)
    - [Why Qwen2.5-Coder-1.5B-Instruct?](#why-qwen25-coder-15b-instruct)
    - [Survey of Models in Reference Literature](#survey-of-models-in-reference-literature)
    - [Three-Tier Capacity Axis](#three-tier-capacity-axis)
-6. [Cross-Paper Comparison Methodology](#-cross-paper-comparison-methodology)
+6. [Cross-Paper Comparison Methodology](#6-cross-paper-comparison-methodology)
    - [Five-Axis Comparison Framework](#five-axis-comparison-framework)
    - [Direct Reproduction & Extension of EvoEval Baselines](#direct-reproduction--extension-of-evoeval-baselines)
    - [Cross-Paper Benchmark Alignment Matrix](#cross-paper-benchmark-alignment-matrix)
    - [Statistical Rigor & Reporting Standards](#statistical-rigor--reporting-standards)
-7. [Prioritized Multi-Arm Mitigation Framework (P1–P4)](#-prioritized-multi-arm-mitigation-framework-p1p4)
+7. [Prioritized Multi-Arm Mitigation Framework (P1–P4)](#7-prioritized-multi-arm-mitigation-framework-p1p4)
    - [Arm 1 (P1 - Primary): Invariance-Regularized GRPO (Inv-GRPO)](#arm-1-p1---primary-invariance-regularized-grpo-inv-grpo)
    - [Arm 2 (P2 - SFT): Contrastive Thought-Template SFT](#arm-2-p2---sft-contrastive-thought-template-sft)
    - [Arm 3 (P3 - Syntax): AST-Guided Policy Optimization (AST-RL)](#arm-3-p3---syntax-ast-guided-policy-optimization-ast-rl)
    - [Arm 4 (P4 - Process): Stepwise Execution-Gated RLVR (Step-RLVR)](#arm-4-p4---process-stepwise-execution-gated-rlvr-step-rlvr)
    - [Intervention Paradigm Analysis: Distillation vs. RLVR vs. RLIR](#intervention-paradigm-analysis-distillation-vs-rlvr-vs-rlir)
-8. [The Six-Model Comparative Experimental Suite (M1–M6)](#-the-six-model-comparative-experimental-suite-m1m6)
-9. [Mathematical Formulation of Multi-Dimensional Evaluation Metrics](#-mathematical-formulation-of-multi-dimensional-evaluation-metrics)
-10. [Clean Architecture Software Engineering Blueprint](#-clean-architecture-software-engineering-blueprint)
-11. [Exhaustive 12-Week (3-Month) Execution Roadmap](#-exhaustive-12-week-3-month-execution-roadmap)
-12. [Hardware Feasibility & Edge VRAM Budget (RTX 3070 8GB)](#-hardware-feasibility--edge-vram-budget-rtx-3070-8gb)
-13. [Installation, Setup & Quickstart Guide](#-installation-setup--quickstart-guide)
-14. [Research Authors, Supervision & Citation](#-research-authors-supervision--citation)
+8. [The Six-Model Comparative Experimental Suite (M1–M6)](#8-the-six-model-comparative-experimental-suite-m1m6)
+9. [Mathematical Formulation of Multi-Dimensional Evaluation Metrics](#9-mathematical-formulation-of-multi-dimensional-evaluation-metrics)
+10. [Clean Architecture Software Engineering Blueprint](#10-clean-architecture-software-engineering-blueprint)
+11. [Exhaustive 12-Week (3-Month) Execution Roadmap](#11-exhaustive-12-week-3-month-execution-roadmap)
+12. [Hardware Feasibility & Edge VRAM Budget (RTX 3070 8GB)](#12-hardware-feasibility--edge-vram-budget-rtx-3070-8gb)
+13. [Installation, Setup & Quickstart Guide](#13-installation-setup--quickstart-guide)
+14. [Research Authors, Supervision & Citation](#14-research-authors-supervision--citation)
 
 ---
 
-## 🎯 Executive Summary & Core Research Questions
+## 1. Executive Summary & Core Research Questions
 
 Small Language Models (SLMs) in the 1–3B parameter bracket (exemplified by `Qwen2.5-Coder-1.5B-Instruct`) are foundational to the future of private, low-latency, on-device, and edge intelligence. Within telecommunications operators like **Orange Innovation Labs**, edge SLMs drive critical workloads: autonomous network script patching, infrastructure configuration verification, self-healing diagnostic routines, and localized developer copilot workflows.
 
@@ -78,14 +78,14 @@ Despite stellar pass rates on static benchmarks, modern code-generating language
 2. **SFT Memorization Bias:** Standard Supervised Fine-Tuning (SFT) on reasoning traces often teaches models the *syntactic formatting* of Chain-of-Thought (CoT) without inducing invariant underlying logic.
 3. **RLVR Shortcut Learning & Reward Hacking:** Standard Reinforcement Learning with Verifiable Rewards (RLVR) optimizes for unit-test execution passes on single prompts, frequently converging on superficial shortcut heuristics that fail under out-of-distribution variations.
 
-### ❓ The Central Research Questions
+### Central Research Questions
 
 * **RQ1 (The Diagnostic Boundary):** At which exact structural transformation level ($\ell^*$) does a code SLM collapse, and how does the error distribution (on-path execution slip vs. off-path logic loss vs. wrong-template shortcut dump) differ systematically across parameter capacities ($\sim$1.5B vs. $\sim$7B vs. Frontier)?
 * **RQ2 (The Mitigation Ceiling):** Can a multi-view invariance objective (**Inv-GRPO**) regularize policy rollouts during training to break template mimicry, delay the collapse point ($\Delta\ell^* \ge 2$), and elevate generalization with zero inference-time latency penalty?
 
 ---
 
-## 🔬 Foundational Rationale: Why the Code Domain?
+## 2. Foundational Rationale: Why the Code Domain?
 
 A pivotal architectural and scientific design choice in this research is our exclusive focus on **programmatic code synthesis** rather than mathematical word problems (GSM8K/MATH) or natural language QA.
 
@@ -109,7 +109,7 @@ A pivotal architectural and scientific design choice in this research is our exc
 
 ---
 
-## 🪜 The Reduction Ladder Diagnostic Framework (L0–L5 + Control)
+## 3. The Reduction Ladder Diagnostic Framework (L0–L5 + Control)
 
 To eliminate the noise, cost, and hallucination risks of unverified synthetic datasets, our **Reduction Ladder** grounds each difficulty level in established, peer-reviewed benchmarks hosted on Hugging Face.
 
@@ -210,7 +210,7 @@ To understand how semantics remain invariant while surface complexity shifts, co
 
 ---
 
-## 📚 Comprehensive Literature Taxonomy & Theoretical Foundations
+## 4. Comprehensive Literature Taxonomy & Theoretical Foundations
 
 Our theoretical architecture synthesizes five complementary bodies of peer-reviewed literature across AI reasoning, code generation, and reinforcement learning.
 
@@ -263,7 +263,7 @@ Our theoretical architecture synthesizes five complementary bodies of peer-revie
 
 ---
 
-## 🤖 Model Selection Rationale & Capacity Axis
+## 5. Model Selection Rationale & Capacity Axis
 
 ### Why Qwen2.5-Coder-1.5B-Instruct?
 
@@ -304,7 +304,7 @@ Our theoretical architecture synthesizes five complementary bodies of peer-revie
 
 ---
 
-## 📊 Cross-Paper Comparison Methodology
+## 6. Cross-Paper Comparison Methodology
 
 ### Five-Axis Comparison Framework
 
@@ -339,7 +339,7 @@ Our theoretical architecture synthesizes five complementary bodies of peer-revie
 
 ---
 
-## 🛡️ Prioritized Multi-Arm Mitigation Framework (P1–P4)
+## 7. Prioritized Multi-Arm Mitigation Framework (P1–P4)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -396,7 +396,7 @@ Checks pre- and post-conditions of sub-functions during sandbox execution, award
 
 ---
 
-## 🧪 The Six-Model Comparative Experimental Suite (M1–M6)
+## 8. The Six-Model Comparative Experimental Suite (M1–M6)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -415,7 +415,7 @@ Checks pre- and post-conditions of sub-functions during sandbox execution, award
 
 ---
 
-## 📐 Mathematical Formulation of Multi-Dimensional Evaluation Metrics
+## 9. Mathematical Formulation of Multi-Dimensional Evaluation Metrics
 
 ### 1. Pass@1 (Greedy Functional Correctness)
 $$\text{Pass@1} = \frac{1}{|D|} \sum_{i=1}^{|D|} \mathbb{I}(\text{Sample}_1(x_i) \text{ passes all unit tests})$$
@@ -443,7 +443,7 @@ $$\text{MRI} = \text{Similarity}(y, y_{\text{template}}) \times \max(0, \text{Pa
 
 ---
 
-## 🏛️ Clean Architecture Software Engineering Blueprint
+## 10. Clean Architecture Software Engineering Blueprint
 
 The codebase enforces strict **Clean Architecture (Separation of Concerns)** across 4 isolated layers:
 
@@ -478,7 +478,7 @@ The codebase enforces strict **Clean Architecture (Separation of Concerns)** acr
 
 ---
 
-## 📅 Exhaustive 12-Week (3-Month) Execution Roadmap
+## 11. Exhaustive 12-Week (3-Month) Execution Roadmap
 
 ```
 MONTH 1: DIAGNOSTIC FOUNDATION
@@ -502,7 +502,7 @@ MONTH 3: INVARIANCE OPTIMIZATION & SYNTHESIS
 
 ---
 
-## ⚡ Hardware Feasibility & Edge VRAM Budget (RTX 3070 8GB)
+## 12. Hardware Feasibility & Edge VRAM Budget (RTX 3070 8GB)
 
 Every experimental pipeline stage is empirically calibrated to run within an **8GB VRAM envelope**:
 
@@ -514,7 +514,7 @@ Every experimental pipeline stage is empirically calibrated to run within an **8
 
 ---
 
-## 🚀 Installation, Setup & Quickstart Guide
+## 13. Installation, Setup & Quickstart Guide
 
 ### 1. Clone & Environment Setup
 ```bash
@@ -568,7 +568,7 @@ For interactive inspection, error taxonomy drill-downs, and visualization:
 
 ---
 
-## 👥 Research Authors, Supervision & Citation
+## 14. Research Authors, Supervision & Citation
 
 ### Research Authors
 * **Omar Abdelhamid** — AI R&D Engineer, Orange Innovation Labs | M.Sc. AI Researcher, Benha University
@@ -591,4 +591,4 @@ For interactive inspection, error taxonomy drill-downs, and visualization:
 ```
 
 ---
-*Developed with ❤️ at Orange Innovation Labs Egypt. Released under the [MIT License](LICENSE).*
+*Developed at Orange Innovation Labs Egypt. Released under the [MIT License](LICENSE).*

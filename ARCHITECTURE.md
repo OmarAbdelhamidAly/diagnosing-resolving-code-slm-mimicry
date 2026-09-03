@@ -1,12 +1,12 @@
-# 🏛️ Software Architecture & Design Blueprint
-**Project:** Reduction Ladder for Code & Multi-Arm Mitigation  
+# Software Architecture & Design Blueprint
+**Project:** Diagnosing & Resolving Code SLM Mimicry  
 **Organization:** Orange Innovation Labs — AI Research Division  
 **Authors:** Omar Abdelhamid, Nour Walid  
 **Supervisor:** Dr. Ghada  
 
 ---
 
-## 🎯 Architectural Philosophy
+## Architectural Philosophy
 
 This codebase is designed following **Robert C. Martin's Clean Architecture** principles adapted for scientific machine learning research. The primary objectives are:
 
@@ -17,7 +17,7 @@ This codebase is designed following **Robert C. Martin's Clean Architecture** pr
 
 ---
 
-## 📐 Layered Architecture Overview
+## Layered Architecture Overview
 
 ```
  ┌─────────────────────────────────────────────────────────────────────────┐
@@ -54,7 +54,7 @@ This codebase is designed following **Robert C. Martin's Clean Architecture** pr
 
 ---
 
-## 📁 Repository Directory Responsibilities
+## Repository Directory Responsibilities
 
 ```
 diagnosing-resolving-code-slm-mimicry/
@@ -125,7 +125,7 @@ diagnosing-resolving-code-slm-mimicry/
 
 ---
 
-## 👥 Team Collaboration Guidelines (For Omar & Nour)
+## Team Collaboration Guidelines (For Omar & Nour)
 
 ### 1. Adding a New Benchmark Level
 To add a new benchmark (e.g. MBPP or a new EvoEval split):
@@ -143,7 +143,7 @@ To add a new benchmark (e.g. MBPP or a new EvoEval split):
 
 ---
 
-## 🛡️ Coding Standards
+## Coding Standards
 - **Strict Type Hinting:** All functions must include complete Python type hints (`typing.List`, `Dict`, `Optional`, `Tuple`).
 - **No Heavy Frameworks in Domain Core:** `src/core/` must never import `torch`, `transformers`, `datasets`, or `bitsandbytes`.
 - **Atomic File Writing:** Always use `src.infrastructure.persistence.save_jsonl` / `save_json` to prevent partial corrupted files during crashes.
