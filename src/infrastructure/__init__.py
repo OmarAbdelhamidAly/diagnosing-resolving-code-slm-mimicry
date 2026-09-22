@@ -1,8 +1,7 @@
 """Infrastructure package with concrete adapters and drivers."""
 
-from src.infrastructure.sandbox import MultiprocessSandbox
+from src.infrastructure.sandbox import SubprocessSandbox, MultiprocessSandbox
 from src.infrastructure.hf_loader import HuggingFaceBenchmarkLoader
-from src.infrastructure.model_loader import QuantizedModelRunner
 from src.infrastructure.classifier import RuleBasedErrorClassifier
 from src.infrastructure.persistence import (
     save_jsonl,
@@ -12,7 +11,16 @@ from src.infrastructure.persistence import (
     load_yaml,
 )
 
+
+def __getattr__(name: str):
+    if name == "QuantizedModelRunner":
+        from src.infrastructure.model_loader import QuantizedModelRunner
+        return QuantizedModelRunner
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
 __all__ = [
+    "SubprocessSandbox",
     "MultiprocessSandbox",
     "HuggingFaceBenchmarkLoader",
     "QuantizedModelRunner",

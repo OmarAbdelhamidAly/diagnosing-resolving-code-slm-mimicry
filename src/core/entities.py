@@ -98,6 +98,18 @@ class LevelEvaluationReport:
     average_token_length: float = 0.0
     task_results: List[Dict[str, Any]] = field(default_factory=list)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "level": self.ladder_level,
+            "benchmark": self.benchmark_name,
+            "total_tasks": self.total_tasks,
+            "pass_at_1": self.pass_at_1,
+            "pass_at_5": self.pass_at_5,
+            "error_breakdown": self.error_breakdown,
+            "average_token_length": self.average_token_length,
+            "task_results": self.task_results,
+        }
+
 
 @dataclass
 class ModelEvaluationSuiteReport:
@@ -110,6 +122,21 @@ class ModelEvaluationSuiteReport:
     ladder_auc: float = 0.0
     consistency_delta: float = 0.0
     memorization_risk_index: float = 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "model_name": self.model_name,
+            "checkpoint_path": self.checkpoint_path,
+            "timestamp": self.timestamp,
+            "ladder_auc": self.ladder_auc,
+            "collapse_point": self.collapse_point,
+            "consistency_delta": self.consistency_delta,
+            "memorization_risk_index": self.memorization_risk_index,
+            "level_reports": {
+                k: (v.to_dict() if hasattr(v, "to_dict") else v)
+                for k, v in self.level_reports.items()
+            },
+        }
 
 
 @dataclass

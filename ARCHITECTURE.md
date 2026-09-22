@@ -89,22 +89,36 @@ diagnosing-resolving-code-slm-mimicry/
 │   │   ├── classifier.py                  # RuleBasedErrorClassifier (Failure taxonomy heuristics)
 │   │   └── persistence.py                 # Atomic JSONL/JSON/YAML persistence
 │   │
-│   └── services/                          # Layer 3: Application Services (Use-Case Orchestrators)
+│   ├── shared/                            # Shared Cross-Stage Components
+│   │   ├── __init__.py
+│   │   ├── data_service.py                # Benchmark ingestion & ground-truth verification
+│   │   ├── engine.py                      # Unified EvaluationEngine (inference, sandbox, reports)
+│   │   ├── metrics.py                     # Ladder AUC, Collapse Point, MRI calculations
+│   │   └── plots.py                       # Publication-grade degradation & taxonomy plots
+│   │
+│   ├── stage2_baseline/                   # Stage 2 Baseline Probing
+│   │   ├── __init__.py
+│   │   └── evaluation_service.py          # Level & suite evaluation loop
+│   │
+│   ├── stage3_distillation/               # Stage 3 SFT Distillation
+│   │   ├── __init__.py
+│   │   ├── dataset_builder.py             # Vanilla CoT distillation builder
+│   │   └── contrastive_builder.py         # Shortcut-rejection contrastive builder
+│   │
+│   ├── stage4_training/                   # Stage 4 QLoRA SFT Training
+│   │   ├── __init__.py
+│   │   └── qlora_finetune.py              # 4-bit NF4 QLoRA fine-tuner
+│   │
+│   └── stage5_comparison/                 # Stage 5 Post-Training Comparison
 │       ├── __init__.py
-│       ├── data_service.py                # Benchmark ingestion & ground-truth verification
-│       ├── evaluation_service.py          # Pass@1, Pass@5 evaluation loop & error diagnosis
-│       ├── analysis_service.py            # Ladder AUC, Collapse Point, MRI calculation & publication plots
-│       └── training/                      # Training Use Cases (QLoRA, Contrastive SFT, Inv-GRPO)
-│           ├── __init__.py
-│           ├── qlora_trainer.py           # SFT trainer orchestrator
-│           └── inv_grpo_trainer.py        # Paired invariance RL trainer orchestrator
+│       └── analysis_service.py            # Cross-model summary tables & degradation comparison
 │
 ├── notebooks/                             # Layer 4: Interactive Notebooks
-│   ├── nb_01_data_pipeline.ipynb          # Stage 1: Data ingestion & validation
-│   ├── nb_02_baseline_eval.ipynb          # Stage 2: Baseline (M1) un-tuned model evaluation
-│   ├── nb_03_qlora_training.ipynb         # Stage 4: SFT training (M2 Vanilla vs M3 Contrastive)
-│   ├── nb_04_rlvr_training.ipynb          # Stage 5: RL training (M4 GRPO vs M5 AST vs M6 Inv-GRPO)
-│   └── nb_05_comparison.ipynb            # Stage 6: Comparative multi-model analysis & figures
+│   ├── nb_01_data_pipeline.ipynb          # Stage 1: Benchmark Data Ingestion & Ground-Truth Verification
+│   ├── nb_02_baseline_eval.ipynb          # Stage 2: Baseline (M1) Evaluation & Collapse Probing
+│   ├── nb_03_distillation.ipynb           # Stage 3: Vanilla CoT & Contrastive SFT Dataset Construction
+│   ├── nb_04_qlora_training.ipynb         # Stage 4: QLoRA Fine-Tuning (M2 Vanilla vs M3 Contrastive)
+│   └── nb_05_post_training_eval.ipynb     # Stage 5: Comparative Evaluation & Publication Figures
 │
 ├── scripts/                               # Layer 4: CLI Entry Points
 │   ├── run_stage1_data.py                 # CLI for Stage 1 data pipeline

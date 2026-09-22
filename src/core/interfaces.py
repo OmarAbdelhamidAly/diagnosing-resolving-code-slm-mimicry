@@ -48,6 +48,20 @@ class IModelRunner(Protocol):
         """Generate code completions for a given prompt."""
         ...
 
+    def generate_batch(
+        self,
+        prompts: List[str],
+        temperature: float = 0.0,
+        num_samples: int = 1,
+        max_new_tokens: int = 1024
+    ) -> List[List[str]]:
+        """Generate code completions for a batch of prompts.
+
+        Returns a list of length len(prompts), where each element is a
+        list of ``num_samples`` completions for that prompt.
+        """
+        ...
+
 
 class IErrorClassifier(Protocol):
     """Interface for diagnosing and categorizing execution failures."""

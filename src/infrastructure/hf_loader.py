@@ -7,59 +7,65 @@ from src.core.interfaces import IBenchmarkLoader
 from src.core.entities import BenchmarkTask
 from src.core.exceptions import DatasetIngestionError
 from src.infrastructure.persistence import save_jsonl, load_jsonl
+from src.core.config import settings
 
 
-LADDER_DATASET_CONFIGS = {
-    "L0": {
-        "name": "HumanEval_Standard",
-        "dataset_path": "openai/openai_humaneval",
-        "split": "test",
-        "trust_remote_code": False
-    },
-    "L1": {
-        "name": "EvoEval_Subtle",
-        "dataset_path": "evoeval/EvoEval_subtle",
-        "split": "test",
-        "trust_remote_code": False
-    },
-    "L2": {
-        "name": "EvoEval_ToolUse",
-        "dataset_path": "evoeval/EvoEval_tool_use",
-        "split": "test",
-        "trust_remote_code": False
-    },
-    "L3": {
-        "name": "EvoEval_Creative",
-        "dataset_path": "evoeval/EvoEval_creative",
-        "split": "test",
-        "trust_remote_code": False
-    },
-    "L4": {
-        "name": "EvoEval_Difficult",
-        "dataset_path": "evoeval/EvoEval_difficult",
-        "split": "test",
-        "trust_remote_code": False
-    },
-    "L5": {
-        "name": "EvoEval_Combine",
-        "dataset_path": "evoeval/EvoEval_combine",
-        "split": "test",
-        "trust_remote_code": False
-    },
-    "Ctrl": {
-        "name": "LiveCodeBench_Lite",
-        "dataset_path": "livecodebench/code_generation_lite",
-        "split": "test",
-        "trust_remote_code": True
+def get_ladder_configs() -> Dict[str, Dict[str, Any]]:
+    """Dynamically get ladder dataset configurations from centralized settings."""
+    return {
+        "L0": {
+            "name": "HumanEval_Standard",
+            "dataset_path": settings.benchmarks.l0_humaneval,
+            "split": "test",
+            "trust_remote_code": False
+        },
+        "L1": {
+            "name": "EvoEval_Subtle",
+            "dataset_path": settings.benchmarks.l1_subtle,
+            "split": "test",
+            "trust_remote_code": False
+        },
+        "L2": {
+            "name": "EvoEval_ToolUse",
+            "dataset_path": settings.benchmarks.l2_verbose,
+            "split": "test",
+            "trust_remote_code": False
+        },
+        "L3": {
+            "name": "EvoEval_Creative",
+            "dataset_path": settings.benchmarks.l3_creative,
+            "split": "test",
+            "trust_remote_code": False
+        },
+        "L4": {
+            "name": "EvoEval_Difficult",
+            "dataset_path": settings.benchmarks.l4_difficult,
+            "split": "test",
+            "trust_remote_code": False
+        },
+        "L5": {
+            "name": "EvoEval_Combine",
+            "dataset_path": settings.benchmarks.l5_combine,
+            "split": "test",
+            "trust_remote_code": False
+        },
+        "Ctrl": {
+            "name": "LiveCodeBench_Lite",
+            "dataset_path": settings.benchmarks.control_lcb,
+            "split": "test",
+            "trust_remote_code": True
+        }
     }
-}
+
+
+LADDER_DATASET_CONFIGS = get_ladder_configs()
 
 
 class HuggingFaceBenchmarkLoader(IBenchmarkLoader):
     """Loads and normalizes coding benchmarks from Hugging Face into domain BenchmarkTasks."""
 
-    def __init__(self, cache_dir: str = "data/ladder"):
-        self.cache_dir = cache_dir
+    def __init__(self, cache_dir: Optional[str] = None):
+        self.cache_dir = cache_dir or settings.storage.ladder_cache_dir
 
     def load_level(self, level_key: str, force_download: bool = False) -> List[BenchmarkTask]:
         if level_key not in LADDER_DATASET_CONFIGS:

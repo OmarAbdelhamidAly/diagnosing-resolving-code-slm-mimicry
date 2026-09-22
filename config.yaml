@@ -7,19 +7,30 @@
 project:
   name: "diagnosing-resolving-code-slm-mimicry"
   authors: ["Omar Abdelhamid", "Nour Walid"]
-  supervisor: "Dr. Ghada"
+  supervisor: "Dr. Ghada Soliman"
   institution: "Orange Innovation Labs"
   seed: 42
 
+storage:
+  # Drive path for Hugging Face weights cache (can be overridden by .env or HF_HOME)
+  hf_cache_dir: "D:/hf_cache"
+  ladder_cache_dir: "data/ladder"
+  distillation_cache_dir: "data/distillation"
+  results_dir: "results"
+  checkpoints_dir: "checkpoints"
+
 models:
   student_model: "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+  comparison_model: "Qwen/Qwen2.5-Coder-7B-Instruct"
   quantization: "4bit_nf4"
   max_seq_len: 2048
+  device_map: "auto"
+  torch_dtype: "bfloat16"
 
 benchmarks:
   l0_humaneval: "openai/openai_humaneval"
   l1_subtle: "evoeval/EvoEval_subtle"
-  l2_verbose: "evoeval/EvoEval_verbose"
+  l2_verbose: "evoeval/EvoEval_tool_use"
   l3_creative: "evoeval/EvoEval_creative"
   l4_difficult: "evoeval/EvoEval_difficult"
   l5_combine: "evoeval/EvoEval_combine"
@@ -30,7 +41,16 @@ evaluation:
   temperature_greedy: 0.0
   temperature_sample: 0.8
   num_samples: 5
-  timeout_seconds: 10.0
+  timeout_seconds: 5.0
+  max_new_tokens: 1024
+
+distillation:
+  num_samples: 10000
+  cot_source: "opencoder_reasoning"
+  min_tokens: 64
+  max_tokens: 1800
+  vanilla_file: "sft_positive_cot.jsonl"
+  contrastive_file: "sft_contrastive_pairs.jsonl"
 
 qlora:
   r: 16
@@ -38,11 +58,13 @@ qlora:
   dropout: 0.05
   target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
   learning_rate: 2.0e-4
+  lr_scheduler_type: "cosine"
   batch_size: 4
   gradient_accumulation_steps: 4
   epochs: 3
   warmup_ratio: 0.03
-  output_dir: "checkpoints/qlora_adapter"
+  vanilla_output_dir: "checkpoints/qlora_vanilla_adapter"
+  contrastive_output_dir: "checkpoints/qlora_contrastive_adapter"
 
 inv_grpo:
   group_size: 4

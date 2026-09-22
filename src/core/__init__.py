@@ -27,6 +27,8 @@ from src.core.exceptions import (
     ConfigurationError,
 )
 
+from src.core.config import get_settings, settings, Settings
+
 __all__ = [
     "BenchmarkTask",
     "ExecutionResult",
@@ -48,4 +50,7 @@ __all__ = [
     "ModelInferenceError",
     "VRAMExceededError",
     "ConfigurationError",
+    "get_settings",
+    "settings",
+    "Settings",
 ]

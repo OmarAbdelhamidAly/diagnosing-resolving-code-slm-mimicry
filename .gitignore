@@ -74,4 +74,8 @@ proposal/*.synctex.gz
 proposal/*.toc
 proposal/*.pdf
 *.pdf
+PROFILE_README.md
+WORKFLOW.md
+scripts/
+unsloth_compiled_cache/
 

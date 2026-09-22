@@ -1,7 +1,7 @@
 # Diagnosing and Resolving Code SLM Mimicry
 
 > **Probing and Resolving Shortcut Learning vs. Transferable Algorithmic Reasoning in Code-Generating SLMs & LLMs**  
-> *A Joint Research Initiative by Orange Innovation Labs (AI R&D Division) & Benha University*
+> *A Research Initiative by Orange Innovation Labs (AI R&D Division)*
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=for-the-badge&logo=python)](https://www.python.org/)
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4%2B-EE4C2C.svg?style=for-the-badge&logo=pytorch)](https://pytorch.org/)
@@ -517,16 +517,30 @@ Every experimental pipeline stage is empirically calibrated to run within an **8
 ## 13. Installation, Setup & Quickstart Guide
 
 ### 1. Clone & Environment Setup
+
+The repository is thoroughly tested and verified on **Python 3.10.20** with **CUDA 12.4** on Windows 10/11 (AMD64) and Linux.
+
+#### Option A: Conda (Recommended for team reproducibility)
 ```bash
 # Clone the repository
 git clone https://github.com/OmarAbdelhamidAly/diagnosing-resolving-code-slm-mimicry.git
 cd diagnosing-resolving-code-slm-mimicry
 
+# Create & activate conda environment
+conda env create -f environment.yml
+conda activate reo_env
+```
+
+#### Option B: Standard Python venv (Python 3.10.x required)
+```bash
 # Create & activate environment (Windows PowerShell)
 python -m venv .venv
 .venv\Scripts\activate
 
-# Install locked dependencies
+# Step 1: Install PyTorch 2.6.0 with CUDA 12.4
+pip install torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cu124
+
+# Step 2: Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -538,40 +552,25 @@ storage:
   ladder_cache_dir: "data/ladder"
 ```
 
-### 3. Run Stage-by-Stage Pipelines
+### 3. Interactive Research Notebooks (Primary Workflow)
 
-```bash
-# STAGE 1: Download and verify all 6 Ladder benchmarks (664 tasks in < 25s)
-python scripts/run_stage1_data.py
+All research stages, dataset curation, model training, evaluation runs, and publication visualizations are executed and showcased interactively via Jupyter Notebooks:
 
-# STAGE 2: Run Baseline (M1) 4-bit Evaluation on the Reduction Ladder
-python scripts/run_stage2_eval.py --model baseline
+| Notebook | Stage | Description & Key Visuals |
+|---|---|---|
+| [`notebooks/nb_01_data_pipeline.ipynb`](notebooks/nb_01_data_pipeline.ipynb) | **Stage 1: Ingestion & Verification** | Downloads & caches L0–L5 benchmarks; runs multi-process ground-truth verification; inspects task schemas. |
+| [`notebooks/nb_02_baseline_eval.ipynb`](notebooks/nb_02_baseline_eval.ipynb) | **Stage 2: Baseline Probing** | Evaluates M1 (`Qwen2.5-Coder-1.5B-Instruct` 4-bit NF4); plots degradation curves and failure taxonomy breakdown. |
+| [`notebooks/nb_03_distillation.ipynb`](notebooks/nb_03_distillation.ipynb) | **Stage 3: SFT Data Construction** | Builds Vanilla CoT traces (Arm 2A) & synthetic Contrastive shortcut-rejection pairs (Arm 2B); token distribution stats. |
+| [`notebooks/nb_04_qlora_training.ipynb`](notebooks/nb_04_qlora_training.ipynb) | **Stage 4: QLoRA Fine-Tuning** | Trains 4-bit NF4 QLoRA adapters within 8GB VRAM envelope; monitors loss convergence and saves adapter weights. |
+| [`notebooks/nb_05_post_training_eval.ipynb`](notebooks/nb_05_post_training_eval.ipynb) | **Stage 5: Comparative Analysis** | Evaluates post-training checkpoints (M1 vs M2 vs M3); renders multi-model degradation curves, AUC, and delta tables. |
 
-# STAGE 3 & 4: Curate Contrastive Data and Train SFT Models
-python scripts/run_stage3_distill_data.py
-python scripts/run_stage4_qlora.py --arm contrastive
-
-# STAGE 5: Train Invariance-Regularized Policy Optimization (Inv-GRPO)
-python scripts/run_stage5_inv_grpo.py
-
-# STAGE 6: Generate Publication Plots & Cross-Paper Metric Tables
-python scripts/run_stage6_analysis.py
-```
-
-### 4. Interactive Jupyter Notebooks
-For interactive inspection, error taxonomy drill-downs, and visualization:
-* [`notebooks/nb_01_data_pipeline.ipynb`](notebooks/nb_01_data_pipeline.ipynb) — Ingestion & verification.
-* [`notebooks/nb_02_baseline_eval.ipynb`](notebooks/nb_02_baseline_eval.ipynb) — Baseline M1 ladder evaluation.
-* [`notebooks/nb_03_qlora_training.ipynb`](notebooks/nb_03_qlora_training.ipynb) — SFT & Contrastive training.
-* [`notebooks/nb_04_rlvr_training.ipynb`](notebooks/nb_04_rlvr_training.ipynb) — GRPO & Inv-GRPO training.
-* [`notebooks/nb_05_comparison.ipynb`](notebooks/nb_05_comparison.ipynb) — Publication-grade comparative plots.
 
 ---
 
 ## 14. Research Authors, Supervision & Citation
 
 ### Research Authors
-* **Omar Abdelhamid** — AI R&D Engineer, Orange Innovation Labs | M.Sc. AI Researcher, Benha University
+* **Omar Abdelhamid** — AI R&D Engineer, Orange Innovation Labs
 * **Nour Walid** — AI R&D Engineer, Orange Innovation Labs
 
 ### Research Supervision
@@ -585,7 +584,7 @@ For interactive inspection, error taxonomy drill-downs, and visualization:
   author    = {Abdelhamid, Omar and Walid, Nour and Soliman, Ghada},
   journal   = {Technical Research Report -- Orange Innovation Labs AI R\&D},
   year      = {2026},
-  institution = {Orange Innovation Labs \& Benha University},
+  institution = {Orange Innovation Labs},
   url       = {https://github.com/OmarAbdelhamidAly/diagnosing-resolving-code-slm-mimicry}
 }
 ```
