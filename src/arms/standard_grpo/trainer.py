@@ -159,10 +159,10 @@ class StandardGRPOTrainer:
     def train(
         self,
         tasks: List[Dict[str, Any]],
-        num_steps: int = 50,
+        num_steps: int = 500,
         grad_accum_steps: int = 2,
     ) -> Dict[str, List[float]]:
-        """Executes standard GRPO training loop on isolated prompts."""
+        """Executes standard GRPO training loop on isolated prompts (default 500 steps)."""
         optimizer = torch.optim.AdamW(
             filter(lambda p: p.requires_grad, self.model.parameters()),
             lr=self.learning_rate,
@@ -226,10 +226,16 @@ class StandardGRPOTrainer:
                 "Loss": f"{step_loss:.3f}",
             })
             accum_loss = 0.0
+
+            # Periodic checkpoint save every 100 steps
+            if step % 100 == 0 and step < num_steps:
+                self.model.save_pretrained(self.output_dir)
+                self.tokenizer.save_pretrained(self.output_dir)
+
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        print(f"\n[StandardGRPOTrainer] [Checkpoint] Saving Standard GRPO Checkpoint to: {self.output_dir}")
+        print(f"\n[StandardGRPOTrainer] [Checkpoint] Saving Final Standard GRPO Checkpoint to: {self.output_dir}")
         self.model.save_pretrained(self.output_dir)
         self.tokenizer.save_pretrained(self.output_dir)
         print("[StandardGRPOTrainer] [OK] Checkpoint successfully saved!")

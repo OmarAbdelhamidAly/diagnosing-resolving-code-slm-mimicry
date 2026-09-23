@@ -169,14 +169,14 @@ class InvGRPOTrainer:
     def train(
         self,
         train_pairs: List[PairedTask],
-        num_steps: int = 25,
+        num_steps: int = 500,
         grad_accum_steps: int = 2,
     ) -> Dict[str, List[float]]:
         """Executes the Inv-GRPO policy optimization loop.
 
         Args:
             train_pairs: List of PairedTask instances to sample from.
-            num_steps: Total number of optimization steps to run.
+            num_steps: Total number of optimization steps to run (default 500 for full production training).
             grad_accum_steps: Number of steps to accumulate gradients before optimizer step.
 
         Returns:
@@ -257,10 +257,16 @@ class InvGRPOTrainer:
                 "Loss": f"{step_loss:.3f}"
             })
             accum_loss = 0.0
+
+            # Periodic checkpoint save every 100 steps
+            if step % 100 == 0 and step < num_steps:
+                self.model.save_pretrained(self.output_dir)
+                self.tokenizer.save_pretrained(self.output_dir)
+
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        print(f"\n[InvGRPOTrainer] [Checkpoint] Saving Inv-GRPO Adapter Checkpoint to: {self.output_dir}")
+        print(f"\n[InvGRPOTrainer] [Checkpoint] Saving Final Inv-GRPO Adapter Checkpoint to: {self.output_dir}")
         self.model.save_pretrained(self.output_dir)
         self.tokenizer.save_pretrained(self.output_dir)
         print("[InvGRPOTrainer] [OK] Checkpoint successfully saved!")
