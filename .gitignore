@@ -55,6 +55,7 @@ wandb/
 # IDE & OS files
 .vscode/
 .idea/
+.continue/
 *.swp
 *.swo
 .DS_Store
