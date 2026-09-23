@@ -135,7 +135,7 @@ class EvaluationSuite:
         out_path = Path(output_dir) / model_id / "eval_report.json"
         self._save_report(suite_report, out_path)
 
-        print(f"\n[EvaluationSuite] Done → {out_path}")
+        print(f"\n[EvaluationSuite] Done -> {out_path}")
         return suite_report
 
     # ------------------------------------------------------------------

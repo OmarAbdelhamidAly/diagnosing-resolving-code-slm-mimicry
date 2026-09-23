@@ -174,7 +174,7 @@ class EvaluationReporter:
         out = self.output_dir / filename
         fig.savefig(out, bbox_inches="tight")
         plt.close(fig)
-        print(f"[PLOT] Saved → {out}")
+        print(f"[PLOT] Saved -> {out}")
         return out
 
     # ------------------------------------------------------------------
@@ -240,7 +240,7 @@ class EvaluationReporter:
         out = self.output_dir / filename
         fig.savefig(out, bbox_inches="tight")
         plt.close(fig)
-        print(f"[PLOT] Saved → {out}")
+        print(f"[PLOT] Saved -> {out}")
         return out
 
     # ------------------------------------------------------------------
@@ -288,7 +288,7 @@ class EvaluationReporter:
         out = self.output_dir / filename
         fig.savefig(out, bbox_inches="tight")
         plt.close(fig)
-        print(f"[PLOT] Saved → {out}")
+        print(f"[PLOT] Saved -> {out}")
         return out
 
     # ------------------------------------------------------------------
@@ -310,7 +310,8 @@ class EvaluationReporter:
             except Exception:
                 return float("nan")
 
-        matrix = table[numeric_cols].applymap(_to_float).values.astype(float)
+        _map_fn = getattr(table[numeric_cols], "map", getattr(table[numeric_cols], "applymap", None))
+        matrix = _map_fn(_to_float).values.astype(float)
         row_labels = list(table.index)
 
         fig, ax = plt.subplots(figsize=(len(numeric_cols) * 1.4 + 1, len(row_labels) * 0.9 + 1.5), dpi=200)
@@ -335,7 +336,7 @@ class EvaluationReporter:
         out = self.output_dir / filename
         fig.savefig(out, bbox_inches="tight")
         plt.close(fig)
-        print(f"[PLOT] Saved → {out}")
+        print(f"[PLOT] Saved -> {out}")
         return out
 
     # ------------------------------------------------------------------
