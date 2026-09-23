@@ -1,4 +1,8 @@
-"""Model inference runner using 4-bit NF4 BitsAndBytes quantization."""
+"""Model inference runner using 4-bit NF4 BitsAndBytes quantization.
+
+For code extraction utilities (torch-free), see
+``src.infrastructure.code_utils.extract_code``.
+"""
 
 import os
 import re
@@ -9,6 +13,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from src.core.interfaces import IModelRunner
 from src.core.exceptions import ModelInferenceError, VRAMExceededError
 from src.core.config import settings
+from src.infrastructure.code_utils import extract_code  # re-exported for convenience
 
 
 class QuantizedModelRunner(IModelRunner):
@@ -172,31 +177,5 @@ class QuantizedModelRunner(IModelRunner):
             raise ModelInferenceError(f"Batched generation failed: {e}") from e
 
     def _extract_code(self, raw_text: str) -> str:
-        """Extract Python code block from markdown or raw model output.
-
-        Handles three output formats:
-        1. ```python ... ``` fenced blocks (preferred)
-        2. ``` ... ``` generic fenced blocks
-        3. Raw text that may contain SFT training artefacts like
-           '### Solution:' headers that the model echoes back.
-        """
-        # 1. Fenced python block
-        code_block_match = re.search(r"```python\s*(.*?)\s*```", raw_text, re.DOTALL)
-        if code_block_match:
-            return code_block_match.group(1).strip()
-
-        # 2. Generic fenced block
-        generic_block_match = re.search(r"```\s*(.*?)\s*```", raw_text, re.DOTALL)
-        if generic_block_match:
-            return generic_block_match.group(1).strip()
-
-        # 3. Strip SFT prompt artefacts: the adapter was trained with a
-        #    "### Problem: ... ### Solution:" format.  The model sometimes
-        #    echoes the header in the completion, which causes a SyntaxError
-        #    inside the sandbox.  Remove everything up to and including the
-        #    last "### Solution:" marker if present.
-        solution_marker = re.search(r"###\s*Solution\s*:\s*", raw_text, re.IGNORECASE)
-        if solution_marker:
-            raw_text = raw_text[solution_marker.end():]
-
-        return raw_text.strip()
+        """Delegate to module-level ``extract_code()`` — single source of truth."""
+        return extract_code(raw_text)

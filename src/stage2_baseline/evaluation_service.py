@@ -1,4 +1,17 @@
-"""EvaluationService orchestrating model inference, sandbox execution, and error diagnosis."""
+"""EvaluationService orchestrating model inference, sandbox execution, and error diagnosis.
+
+.. deprecated::
+    This class is superseded by ``src.shared.engine.EvaluationEngine`` which adds
+    batched GPU generation, parallel sandbox execution, and all 9 metric axes.
+    This file is kept for historical reference only.
+
+    Use instead::
+
+        from src.shared import EvaluationEngine
+        engine = EvaluationEngine(model_name="Qwen/Qwen2.5-Coder-1.5B-Instruct")
+        engine.load_benchmarks()
+        report = engine.run_full_ladder(output_tag="my_run")
+"""
 
 import datetime
 from typing import Dict, List, Any, Optional

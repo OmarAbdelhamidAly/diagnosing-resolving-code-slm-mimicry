@@ -143,9 +143,9 @@ class EvaluationSuite:
     # ------------------------------------------------------------------
 
     def _build_runner(self, model_name_or_path: str, adapter_path: Optional[str]):
-        """Dynamically build the model runner (avoids top-level torch import)."""
-        from src.infrastructure.model_runner import HuggingFaceModelRunner
-        return HuggingFaceModelRunner(
+        """Build the model runner using the infrastructure QuantizedModelRunner."""
+        from src.infrastructure.model_loader import QuantizedModelRunner
+        return QuantizedModelRunner(
             model_name_or_path=model_name_or_path,
             adapter_path=adapter_path,
         )

@@ -3,6 +3,7 @@
 from src.infrastructure.sandbox import SubprocessSandbox, MultiprocessSandbox
 from src.infrastructure.hf_loader import HuggingFaceBenchmarkLoader
 from src.infrastructure.classifier import RuleBasedErrorClassifier
+from src.infrastructure.code_utils import extract_code
 from src.infrastructure.persistence import (
     save_jsonl,
     load_jsonl,
@@ -25,6 +26,7 @@ __all__ = [
     "HuggingFaceBenchmarkLoader",
     "QuantizedModelRunner",
     "RuleBasedErrorClassifier",
+    "extract_code",
     "save_jsonl",
     "load_jsonl",
     "save_json",

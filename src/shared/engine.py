@@ -19,12 +19,12 @@ from src.infrastructure.model_loader import QuantizedModelRunner
 from src.infrastructure.sandbox import SubprocessSandbox
 from src.infrastructure.classifier import RuleBasedErrorClassifier
 from src.infrastructure.persistence import save_json, load_json
-from src.shared.metrics import (
+from src.evaluation.metrics import (
     compute_ladder_auc,
     compute_collapse_point,
     compute_consistency_delta,
-    compute_mri,
-    compute_token_efficiency,
+    compute_mri_v2 as compute_mri,
+    compute_overthinking_tax as compute_token_efficiency,
 )
 from src.shared.plots import (
     plot_single_model_degradation,

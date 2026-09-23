@@ -18,15 +18,7 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
 from src.core.config import get_settings
 from src.infrastructure.sandbox import SubprocessSandbox
-
-
-def _extract_code(text: str) -> str:
-    """Extracts python code blocks or returns clean stripped text."""
-    clean = re.sub(r"<thought>.*?</thought>", "", text, flags=re.DOTALL).strip()
-    match = re.search(r"```(?:python)?\s*(.*?)\s*```", clean, re.DOTALL)
-    if match:
-        return match.group(1).strip()
-    return clean
+from src.infrastructure.model_loader import extract_code as _extract_code  # canonical source
 
 
 class StandardGRPOTrainer:

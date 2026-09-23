@@ -17,14 +17,7 @@ from tqdm import tqdm
 from src.infrastructure.sandbox import SubprocessSandbox
 from src.arms.arm1_inv_grpo.dataset import PairedTask
 from src.arms.arm1_inv_grpo.reward_engine import InvGRPORewardEngine, _normalize_code
-
-
-def _extract_code(text: str) -> str:
-    clean = re.sub(r"<thought>.*?</thought>", "", text, flags=re.DOTALL).strip()
-    match = re.search(r"```(?:python)?\s*(.*?)\s*```", clean, re.DOTALL)
-    if match:
-        return match.group(1).strip()
-    return clean
+from src.infrastructure.model_loader import extract_code as _extract_code  # canonical source
 
 
 class InvGRPOEvaluator:
