@@ -26,6 +26,23 @@ from src.arms.arm4_step_rlvr import (
     StepwiseRewardEngine,
 )
 
+# Lazy export of heavy GPU trainers to keep pure-Python imports instant
+_TRAINER_MAP = {
+    "InvGRPOTrainer": ("src.arms.arm1_inv_grpo.trainer", "InvGRPOTrainer"),
+    "StandardGRPOTrainer": ("src.arms.standard_grpo.trainer", "StandardGRPOTrainer"),
+    "ContrastiveSFTTrainer": ("src.arms.arm2_contrastive_dpo.trainer", "ContrastiveSFTTrainer"),
+    "ASTRLTrainer": ("src.arms.arm3_ast_rl.trainer", "ASTRLTrainer"),
+    "StepRLVRTrainer": ("src.arms.arm4_step_rlvr.trainer", "StepRLVRTrainer"),
+}
+
+def __getattr__(name: str):
+    if name in _TRAINER_MAP:
+        mod_name, cls_name = _TRAINER_MAP[name]
+        import importlib
+        mod = importlib.import_module(mod_name)
+        return getattr(mod, cls_name)
+    raise AttributeError(f"module 'src.arms' has no attribute '{name}'")
+
 __all__ = [
     "ContrastiveDatasetParser",
     "to_dpo_triplet",
@@ -38,4 +55,9 @@ __all__ = [
     "StepContract",
     "StepwiseContractVerifier",
     "StepwiseRewardEngine",
+    "InvGRPOTrainer",
+    "StandardGRPOTrainer",
+    "ContrastiveSFTTrainer",
+    "ASTRLTrainer",
+    "StepRLVRTrainer",
 ]

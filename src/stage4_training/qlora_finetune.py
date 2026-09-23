@@ -95,12 +95,14 @@ class QLoRAFineTuner:
             "per_device_train_batch_size": qlora.batch_size,
             "gradient_accumulation_steps": qlora.gradient_accumulation_steps,
             "num_train_epochs":            qlora.epochs,
+            "max_steps":                   500,
+            "save_steps":                  100,
             "max_seq_length":              models.max_seq_len,
             "bf16":                        models.torch_dtype == "bfloat16",
             "fp16":                        False,
             "gradient_checkpointing":      True,
             "logging_steps":               10,
-            "save_strategy":               "epoch",
+            "save_strategy":               "steps",
             "evaluation_strategy":         "no",
             "report_to":                   "none",
         }
@@ -229,25 +231,32 @@ class QLoRAFineTuner:
 
         # 3. Configure SFTConfig (inherits from TrainingArguments)
         ta = self.training_args
-        sft_config = SFTConfig(
-            output_dir=output_dir,
-            dataset_text_field="text",
-            max_length=ta.get("max_seq_length", 2048),
-            learning_rate=ta["learning_rate"],
-            lr_scheduler_type=ta["lr_scheduler_type"],
-            warmup_ratio=ta["warmup_ratio"],
-            per_device_train_batch_size=ta["per_device_train_batch_size"],
-            gradient_accumulation_steps=ta["gradient_accumulation_steps"],
-            num_train_epochs=ta["num_train_epochs"],
-            bf16=ta["bf16"] and torch.cuda.is_bf16_supported(),
-            fp16=ta["fp16"],
-            gradient_checkpointing=ta["gradient_checkpointing"],
-            logging_steps=ta["logging_steps"],
-            save_strategy=ta["save_strategy"],
-            eval_strategy="no",
-            report_to=ta["report_to"],
-            dataloader_num_workers=0,  # Avoids Windows multiprocessing issues
-        )
+        sft_kwargs = {
+            "output_dir": output_dir,
+            "dataset_text_field": "text",
+            "max_length": ta.get("max_seq_length", 2048),
+            "learning_rate": ta["learning_rate"],
+            "lr_scheduler_type": ta["lr_scheduler_type"],
+            "warmup_ratio": ta["warmup_ratio"],
+            "per_device_train_batch_size": ta["per_device_train_batch_size"],
+            "gradient_accumulation_steps": ta["gradient_accumulation_steps"],
+            "bf16": ta["bf16"] and torch.cuda.is_bf16_supported(),
+            "fp16": ta["fp16"],
+            "gradient_checkpointing": ta["gradient_checkpointing"],
+            "logging_steps": ta["logging_steps"],
+            "eval_strategy": "no",
+            "report_to": ta["report_to"],
+            "dataloader_num_workers": 0,  # Avoids Windows multiprocessing issues
+        }
+        if ta.get("max_steps", -1) and ta.get("max_steps", -1) > 0:
+            sft_kwargs["max_steps"] = ta["max_steps"]
+            sft_kwargs["save_strategy"] = ta.get("save_strategy", "steps")
+            sft_kwargs["save_steps"] = ta.get("save_steps", 100)
+        else:
+            sft_kwargs["num_train_epochs"] = ta.get("num_train_epochs", 3)
+            sft_kwargs["save_strategy"] = ta.get("save_strategy", "epoch")
+
+        sft_config = SFTConfig(**sft_kwargs)
 
         # 4. SFTTrainer from TRL
         trainer = SFTTrainer(
