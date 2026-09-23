@@ -60,19 +60,9 @@ wandb/
 .DS_Store
 Thumbs.db
 
-# LaTeX compilation artifacts
-proposal/*.aux
-proposal/*.bbl
-proposal/*.bcf
-proposal/*.blg
-proposal/*.fdb_latexmk
-proposal/*.fls
-proposal/*.log
-proposal/*.out
-proposal/*.run.xml
-proposal/*.synctex.gz
-proposal/*.toc
-proposal/*.pdf
+# Proposal / confidential research reports (private, not for public repo)
+proposal/
+
 *.pdf
 PROFILE_README.md
 WORKFLOW.md
