@@ -38,30 +38,41 @@ class PairedTask:
     decoy_code: str
 
 
+from typing import List, Tuple, Optional, Dict, Any, Union
+
 class InvGRPODatasetLoader:
-    """Loads and pairs canonical L0 problems with their perturbed counterparts."""
+    """Loads and pairs canonical L0 problems with their perturbed counterparts across L1-L5."""
 
     def __init__(
         self,
         ladder_dir: Optional[str] = None,
-        perturbed_level: str = "L2",
+        perturbed_level: Union[str, List[str]] = "ALL",
     ):
         settings = get_settings()
         self.ladder_dir = ladder_dir or settings.storage.ladder_cache_dir
-        self.perturbed_level = perturbed_level.upper()
 
-        level_files = {
+        self.level_files = {
             "L1": "L1_evoeval_subtle.jsonl",
             "L2": "L2_evoeval_tooluse.jsonl",
             "L3": "L3_evoeval_creative.jsonl",
             "L4": "L4_evoeval_difficult.jsonl",
             "L5": "L5_evoeval_combine.jsonl",
         }
-        if self.perturbed_level not in level_files:
-            raise ValueError(f"Unsupported level: {self.perturbed_level}. Choose from {list(level_files.keys())}")
+
+        if isinstance(perturbed_level, str):
+            if perturbed_level.upper() == "ALL":
+                self.target_levels = ["L1", "L2", "L3", "L4", "L5"]
+            else:
+                lvl = perturbed_level.upper()
+                if lvl not in self.level_files:
+                    raise ValueError(f"Unsupported level: {lvl}. Choose from {list(self.level_files.keys())} or 'ALL'")
+                self.target_levels = [lvl]
+        elif isinstance(perturbed_level, list):
+            self.target_levels = [lvl.upper() for lvl in perturbed_level]
+        else:
+            self.target_levels = ["L1", "L2", "L3", "L4", "L5"]
 
         self.l0_path = os.path.join(self.ladder_dir, "L0_humaneval_standard.jsonl")
-        self.pert_path = os.path.join(self.ladder_dir, level_files[self.perturbed_level])
 
     def _read_jsonl(self, path: str) -> List[Dict[str, Any]]:
         records = []
@@ -80,7 +91,7 @@ class InvGRPODatasetLoader:
         train_ratio: float = 0.8,
         seed: int = 42
     ) -> Tuple[List[PairedTask], List[PairedTask]]:
-        """Loads matched pairs and splits them into training and testing sets.
+        """Loads matched pairs across all targeted levels and splits into train/test.
 
         Args:
             max_pairs: Optional limit on the total number of pairs to load.
@@ -93,38 +104,43 @@ class InvGRPODatasetLoader:
         import random
 
         l0_data = self._read_jsonl(self.l0_path)
-        pert_data = self._read_jsonl(self.pert_path)
+        all_paired_tasks: List[PairedTask] = []
 
-        num_items = min(len(l0_data), len(pert_data))
-        if max_pairs:
-            num_items = min(num_items, max_pairs)
+        for lvl in self.target_levels:
+            pert_path = os.path.join(self.ladder_dir, self.level_files[lvl])
+            if not os.path.exists(pert_path):
+                continue
+            pert_data = self._read_jsonl(pert_path)
+            num_items = min(len(l0_data), len(pert_data))
 
-        paired_tasks: List[PairedTask] = []
-        for i in range(num_items):
-            t0 = l0_data[i]
-            t_pert = pert_data[i]
+            for i in range(num_items):
+                t0 = l0_data[i]
+                t_pert = pert_data[i]
 
-            pair = PairedTask(
-                pair_id=f"pair_{i}",
-                l0_task_id=t0["task_id"],
-                pert_task_id=t_pert["task_id"],
-                ladder_level=self.perturbed_level,
-                prompt_orig=t0["prompt"],
-                test_orig=t0["test"],
-                entry_orig=t0["entry_point"],
-                canonical_orig=t0.get("canonical_solution", ""),
-                prompt_pert=t_pert["prompt"],
-                test_pert=t_pert["test"],
-                entry_pert=t_pert["entry_point"],
-                canonical_pert=t_pert.get("canonical_solution", ""),
-                decoy_code=t0.get("canonical_solution", ""),
-            )
-            paired_tasks.append(pair)
+                pair = PairedTask(
+                    pair_id=f"pair_{lvl}_{i}",
+                    l0_task_id=t0["task_id"],
+                    pert_task_id=t_pert["task_id"],
+                    ladder_level=lvl,
+                    prompt_orig=t0["prompt"],
+                    test_orig=t0["test"],
+                    entry_orig=t0["entry_point"],
+                    canonical_orig=t0.get("canonical_solution", ""),
+                    prompt_pert=t_pert["prompt"],
+                    test_pert=t_pert["test"],
+                    entry_pert=t_pert["entry_point"],
+                    canonical_pert=t_pert.get("canonical_solution", ""),
+                    decoy_code=t0.get("canonical_solution", ""),
+                )
+                all_paired_tasks.append(pair)
 
-        # Deterministic split
+        # Deterministic shuffle across all ladder levels
         rng = random.Random(seed)
-        shuffled = list(paired_tasks)
+        shuffled = list(all_paired_tasks)
         rng.shuffle(shuffled)
+
+        if max_pairs:
+            shuffled = shuffled[:max_pairs]
 
         split_idx = int(len(shuffled) * train_ratio)
         train_pairs = shuffled[:split_idx]

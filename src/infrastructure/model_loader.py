@@ -104,8 +104,8 @@ class QuantizedModelRunner(IModelRunner):
             # Apply chat template to every prompt
             formatted: List[str] = []
             for p in prompts:
-                if self.adapter_path:
-                    # Fine-tuned model: use the same ### Problem / ### Solution
+                if self.adapter_path and ("vanilla" in self.adapter_path.lower() or "sft" in self.adapter_path.lower()):
+                    # Vanilla SFT model: use the same ### Problem / ### Solution
                     # format that was used during SFT training so the prompt
                     # distribution matches what the adapter learned.
                     formatted.append(
