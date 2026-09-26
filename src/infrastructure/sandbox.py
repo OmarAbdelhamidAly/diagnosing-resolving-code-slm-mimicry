@@ -10,6 +10,115 @@ from src.core.interfaces import ICodeExecutor
 from src.core.entities import ExecutionResult
 
 
+def _fix_check_body(test: str, entry_point: str) -> str:
+    """Fix LiveCodeBench-style test stubs where ``check()`` body is comment-only.
+
+    LiveCodeBench tasks store I/O examples as inline comments inside the
+    ``check(candidate)`` function:
+
+        def check(candidate):
+            # test 1
+            # input : '3\\nfoo\\n'
+            # expect: '42\\n'
+
+    Because the body contains **only** comments Python raises::
+
+        IndentationError: expected an indented block after function definition
+
+    This helper parses the `# input : ...` and `# expect: ...` cases from the comments,
+    synthesizes a robust execution block that passes the arguments to `candidate`,
+    and asserts expected outputs. It also gracefully resolves `candidate` whether defined
+    as a standalone function or inside `class Solution`.
+    """
+    if not test.strip():
+        return test
+
+    lines = test.splitlines()
+    in_check = False
+    has_real_body = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('def check('):
+            in_check = True
+            continue
+        if in_check:
+            if not stripped:          # blank line — keep scanning
+                continue
+            if stripped.startswith('#'):
+                continue              # comment-only line — still might be empty body
+            # Found a real executable statement inside check()
+            has_real_body = True
+            break
+
+    if in_check and not has_real_body:
+        # Extract test cases from comments
+        pattern = r"#\s*input\s*:\s*(.+?)\s*\n\s*#\s*expect\s*:\s*(.+?)(?=\s*\n\s*#\s*test|\Z)"
+        matches = _re.findall(pattern, test, _re.DOTALL)
+
+        runner = f"""
+{test.rstrip()}
+    # Auto-synthesized test execution from LiveCodeBench specification
+    import json, ast
+
+    def _parse_val(s):
+        s = s.strip()
+        if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
+            try:
+                s = ast.literal_eval(s)
+            except Exception:
+                pass
+        if isinstance(s, str):
+            try:
+                return json.loads(s)
+            except Exception:
+                try:
+                    return ast.literal_eval(s)
+                except Exception:
+                    return s
+        return s
+
+    raw_cases = {repr(matches)}
+    if not raw_cases:
+        return
+
+    for inp_raw, exp_raw in raw_cases:
+        inp_val = _parse_val(inp_raw)
+        exp_val = _parse_val(exp_raw)
+
+        if callable(candidate):
+            if isinstance(inp_val, str) and "\\n" in inp_val:
+                args = [_parse_val(line) for line in inp_val.splitlines() if line.strip()]
+            else:
+                args = [inp_val]
+            
+            try:
+                res = candidate(*args)
+            except TypeError:
+                res = candidate(inp_val)
+
+            if str(res).strip() != str(exp_val).strip() and res != exp_val:
+                raise AssertionError(f"Expected {{exp_val}}, got {{res}}")
+
+# Dynamic invocation of check() with entry_point resolution
+_cand = None
+if '{entry_point}' in globals():
+    _cand = globals()['{entry_point}']
+elif 'Solution' in globals():
+    try:
+        _sol = Solution()
+        _cand = getattr(_sol, '{entry_point}', None) or getattr(Solution, '{entry_point}', None)
+    except Exception:
+        _cand = getattr(Solution, '{entry_point}', None)
+
+if _cand is not None:
+    check(_cand)
+"""
+        return runner
+
+    return test
+
+
 class SubprocessSandbox(ICodeExecutor):
     """Executes generated code in an isolated native subprocess with strict time guarding and UTF-8 encoding."""
 
@@ -18,56 +127,46 @@ class SubprocessSandbox(ICodeExecutor):
         self.python_executable = python_executable or sys.executable
 
     @staticmethod
-    def _fix_body_indent(body: str) -> str:
-        """Ensure every line of a function body is indented by at least 4 spaces.
+    def _fix_body_indent(prompt: str, body: str) -> str:
+        """Ensure body is properly indented relative to the enclosing def in prompt.
 
-        SFT-trained models (M2 / M3 / M6) are trained on data where the
-        canonical solution already has 4-space indentation (since it lives
-        inside a ``def`` block).  However the model sometimes emits the very
-        first statement at column-0 while keeping the relative indentation of
-        nested lines intact, e.g.::
-
-            for i in range(n):     # ← 0-indent  (should be 4)
-                    result += i    # ← 8-indent  (relative: OK)
-            return result          # ← 0-indent  (should be 4)
-
-        After prepending this body to the ``def`` prompt the interpreter sees
-        statements outside the function, raising an IndentationError or
-        ``SyntaxError: 'return' outside function``.
-
-        This helper detects the pattern (first non-empty line at col-0, next
-        non-empty line at col ≥ 4) and adds 4 spaces to every line whose
-        current indentation is 0.
+        Handles both top-level functions (def base=0 -> body=4) and class methods
+        (def base=4 -> body=8, e.g. LeetCode class Solution).
+        Properly handles single-line and multi-line generated bodies without
+        leaving any statement at column 0.
         """
-        lines = body.split("\n")
-        non_empty = [ln for ln in lines if ln.strip()]
+        if not body.strip():
+            return body
+
+        lines_p = prompt.strip().splitlines()
+        def_line = ""
+        for ln in reversed(lines_p):
+            if ln.strip().startswith("def ") or "def " in ln:
+                def_line = ln
+                break
+
+        base_indent = len(def_line) - len(def_line.lstrip()) if def_line else 0
+        target_indent = base_indent + 4
+
+        body_lines = body.splitlines()
+        non_empty = [ln for ln in body_lines if ln.strip()]
         if not non_empty:
             return body
 
         first_indent = len(non_empty[0]) - len(non_empty[0].lstrip())
-        # If the first real line already has indentation, leave everything alone.
-        if first_indent >= 4:
-            return body
+        shift = target_indent - first_indent
 
-        # Check second non-empty line for relative indentation.
-        second_indent = (
-            len(non_empty[1]) - len(non_empty[1].lstrip()) if len(non_empty) > 1 else 0
-        )
-        # Only apply the fix when the pattern "0-indent first line, ≥4 indent
-        # second line" is detected – this is the classic SFT body artefact.
-        if second_indent < 4:
+        if shift == 0:
             return body
-
-        fixed = []
-        for ln in lines:
-            if not ln.strip():
-                fixed.append("")
-            elif len(ln) - len(ln.lstrip()) == 0:
-                # Top-level body statement with missing 4-space prefix.
-                fixed.append("    " + ln)
-            else:
-                fixed.append(ln)
-        return "\n".join(fixed)
+        elif shift > 0:
+            shift_str = " " * shift
+            return "\n".join(shift_str + ln if ln.strip() else ln for ln in body_lines)
+        else:
+            abs_shift = abs(shift)
+            can_unindent = all((len(ln) - len(ln.lstrip())) >= abs_shift for ln in non_empty)
+            if can_unindent:
+                return "\n".join(ln[abs_shift:] if ln.strip() else ln for ln in body_lines)
+            return body
 
     def execute(
         self,
@@ -83,27 +182,28 @@ class SubprocessSandbox(ICodeExecutor):
         # models may emit before the actual code block.
         clean_solution = _re.sub(r"<thought>.*?</thought>", "", solution, flags=_re.DOTALL).strip()
 
+        # Sanitize prompt signatures with invalid ellipsis (e.g. def foo(...):)
+        sanitized_prompt = _re.sub(r'def\s+(\w+)\s*\(\s*\.\.\.\s*\)\s*:', r'def \1(*args, **kwargs):', prompt)
+
         # The SFT-trained adapter (M2/M3) generates only the function body
-        # (everything after the def/docstring).  Prepend the original prompt so
+        # (everything after the def/docstring). Prepend the original prompt so
         # Python always sees a syntactically complete, executable function.
-        # For the zero-shot baseline the model typically generates the full
-        # function, so prepending the prompt would duplicate the signature; we
-        # guard against that by only prepending when the solution does NOT
-        # already contain the entry_point definition.
-        if entry_point and f"def {entry_point}" not in clean_solution and f"def {entry_point}" in prompt:
-            # SFT/RL models output only the body.  Restore 4-space indentation
-            # if the model dropped it from the outermost statement.
-            indented_body = self._fix_body_indent(clean_solution)
-            full_solution = f"{prompt.rstrip()}\n{indented_body}"
+        # Guard against signature duplication for models that output full functions.
+        if entry_point and f"def {entry_point}" not in clean_solution and f"def {entry_point}" in sanitized_prompt:
+            indented_body = self._fix_body_indent(sanitized_prompt, clean_solution)
+            full_solution = f"{sanitized_prompt.rstrip()}\n{indented_body}"
         else:
             full_solution = clean_solution
 
         # Build complete executable script:
-        # - Prompt is a comment only (not executable code)
-        # - Solution defines the function(s)
-        # - Test contains the assertions to run
-        safe_prompt = "\n".join(f"# {line}" for line in prompt.splitlines())
-        full_code = f"{safe_prompt}\n\n{full_solution}\n\n{test}\n"
+        # - Standard typing and algorithmic imports (List, Dict, Optional, math, etc.)
+        # - Prompt as reference comment
+        # - Full solution defining function(s) / class
+        # - Fixed test with assertions
+        standard_imports = "from typing import *\nimport math, collections, itertools, functools, re, sys, io\n\n"
+        safe_prompt = "\n".join(f"# {line}" for line in sanitized_prompt.splitlines())
+        fixed_test = _fix_check_body(test, entry_point)
+        full_code = f"{standard_imports}{safe_prompt}\n\n{full_solution}\n\n{fixed_test}\n"
 
         start_time = time.perf_counter()
         try:

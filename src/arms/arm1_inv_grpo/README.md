@@ -3,7 +3,7 @@
 **Project:** Diagnosing and Resolving Code Small Language Model Mimicry via a Reduction Ladder  
 **Institution:** Orange Innovation Labs — AI Research & Development Division  
 **Authors:** Omar Abdelhamid, Nour Walid  
-**Supervisor:** Dr. Ghada Soliman  
+**Supervisor:** Dr. Ghada Khoriba  
 **Status:** **Primary Methodological Innovation (Novel Contribution — Ours)**  
 
 ---

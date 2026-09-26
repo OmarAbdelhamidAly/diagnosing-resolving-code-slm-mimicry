@@ -358,6 +358,7 @@ Our theoretical architecture synthesizes five complementary bodies of peer-revie
 ```
 
 ### Arm 1 (P1 - Primary): Invariance-Regularized GRPO (Inv-GRPO)
+📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/arm1_inv_grpo/README.md)**
 
 During policy rollouts, Inv-GRPO feeds paired semantically equivalent prompts $(x, x')$ (e.g., $x \in L_0$ and $x' \in L_2$):
 
@@ -367,24 +368,35 @@ Where:
 * $\mathcal{R}_{\text{exec}}(y) \in \{0, 1\}$ is deterministic sandbox unit-test pass/fail.
 * $\mathcal{R}_{\text{consistency}}(y_i, y'_i) = \mathbb{I}(\mathcal{R}_{\text{exec}}(y_i) = 1 \land \mathcal{R}_{\text{exec}}(y'_i) = 1)$ explicitly rewards cross-perturbation invariance.
 * $\mathcal{P}_{\text{template}}$ penalizes verbatim classic boilerplate generation on perturbed prompts.
-* Group relative advantage is computed over the paired group $G$:
-  $$\hat{A}_i = \frac{\mathcal{R}_{\text{total}}(y_i, y'_i) - \text{mean}(\mathcal{R})}{\text{std}(\mathcal{R}) + \epsilon}$$
+* Micro-batched rollout architecture slashes peak VRAM from **12.3 GB to ~3.03 GB** on NVIDIA RTX 3070 Ti 8GB.
 
-### Arm 2 (P2 - SFT): Contrastive Thought-Template SFT
+### Arm 2 (P2 - SFT): Contrastive Thought-Template SFT & DPO
+📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/arm2_contrastive_dpo/README.md)**
 
-Inspired by SuperCorrect, we curate 10K reasoning trajectories from `OpenCodeReasoning`, pairing positive step-by-step traces $y^+$ with negative shortcut failure traces $y^-$:
+Inspired by SuperCorrect and ReCode, we curate reasoning trajectories pairing positive step-by-step traces $y^+$ with negative shortcut failure traces $y^-$ (the memorized HumanEval $L_0$ decoy):
 
-$$\mathcal{L}_{\text{Contrastive}} = -\sum_{t=1}^{T} \log P_\theta(y_t^+ \mid x, y_{<t}^+) + \alpha \max \left( 0, \log P_\theta(y^- \mid x) - \log P_\theta(y^+ \mid x) + m \right)$$
+$$\mathcal{L}_{\text{DPO}}(\theta; \pi_{\text{ref}}) = -\mathbb{E}_{(x, y^+, y^-)} \left[ \log \sigma \left( \beta \log \frac{\pi_\theta(y^+ \mid x)}{\pi_{\text{ref}}(y^+ \mid x)} - \beta \log \frac{\pi_\theta(y^- \mid x)}{\pi_{\text{ref}}(y^- \mid x)} \right) \right]$$
 
 ### Arm 3 (P3 - Syntax): AST-Guided Policy Optimization (AST-RL)
+📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/arm3_ast_rl/README.md)**
 
-Integrates a deterministic Python AST parser into the RL reward loop to reward structural syntax alignment:
+Integrates a deterministic Python AST parser and normalizer into the RL reward loop to reward structural syntax alignment without lexical variable-naming bias:
 
-$$\mathcal{R}_{\text{AST}}(y) = \exp\left( -\alpha \cdot \text{TreeDist}(\text{AST}(y), \text{AST}(y^*)) \right)$$
+$$\mathcal{R}_{\text{total}}(y, y^*) = \mathcal{R}_{\text{exec}}(y) + \beta \cdot \text{simAST}(\text{AST}(y), \text{AST}(y^*))$$
+
+Where $\text{simAST}$ combines $60\%$ normalized node Jaccard similarity and $40\%$ node sequence length ratio (TreeDiff / VeriSeek).
 
 ### Arm 4 (P4 - Process): Stepwise Execution-Gated RLVR (Step-RLVR)
+📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/arm4_step_rlvr/README.md)**
 
-Checks pre- and post-conditions of sub-functions during sandbox execution, awarding partial reward credits for correct intermediate algorithmic sub-goals on complex L4/L5 problems.
+Decomposes complex multi-goal algorithmic tasks ($L_4$ Difficult, $L_5$ Combine) into independent sub-function contracts, awarding dense, stepwise partial credits:
+
+$$\mathcal{R}_{\text{stepwise}}(y) = \sum_{s=1}^S w_s \cdot \mathbb{I}(\text{Contract}_s(y) == \text{Valid})$$
+
+### Baseline Ablation Anchor: Standard GRPO (Outcome-Only RLVR)
+📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/standard_grpo/README.md)**
+
+Implements standard DeepSeekMath GRPO without invariance regularizer or decoy penalties, isolating the exact empirical contribution of our Invariance Regularizer ($\Delta \text{AUC}_{\text{Inv}}$).
 
 ### Intervention Paradigm Analysis: Distillation vs. RLVR vs. RLIR
 
@@ -393,6 +405,7 @@ Checks pre- and post-conditions of sub-functions during sandbox execution, award
 | **Reward Source** | External teacher CoT traces | Binary unit-test sandbox ($0/1$) | Self-rewarding model loop | Paired execution + consistency |
 | **Introduces New Capability?**| **Yes** (seeds latent exploration paths) | **Mostly No** (improves sampling efficiency) | **No** (refines consistency) | **Yes** (enforces cross-view invariance) |
 | **Primary Failure Mode** | Mimics surface formatting without logic | Reward-hacking shortcut patterns | Collapse into degenerate consensus | Paired batch memory requirements |
+
 
 ---
 
@@ -556,32 +569,39 @@ storage:
 
 All research stages, dataset curation, model training, evaluation runs, and publication visualizations are executed and showcased interactively via Jupyter Notebooks:
 
-| Notebook | Stage | Description & Key Visuals |
+| Notebook | Stage / Arm | Description & Key Visuals |
 |---|---|---|
 | [`notebooks/nb_01_data_pipeline.ipynb`](notebooks/nb_01_data_pipeline.ipynb) | **Stage 1: Ingestion & Verification** | Downloads & caches L0–L5 benchmarks; runs multi-process ground-truth verification; inspects task schemas. |
 | [`notebooks/nb_02_baseline_eval.ipynb`](notebooks/nb_02_baseline_eval.ipynb) | **Stage 2: Baseline Probing** | Evaluates M1 (`Qwen2.5-Coder-1.5B-Instruct` 4-bit NF4); plots degradation curves and failure taxonomy breakdown. |
 | [`notebooks/nb_03_distillation.ipynb`](notebooks/nb_03_distillation.ipynb) | **Stage 3: SFT Data Construction** | Builds Vanilla CoT traces (Arm 2A) & synthetic Contrastive shortcut-rejection pairs (Arm 2B); token distribution stats. |
 | [`notebooks/nb_04_qlora_training.ipynb`](notebooks/nb_04_qlora_training.ipynb) | **Stage 4: QLoRA Fine-Tuning** | Trains 4-bit NF4 QLoRA adapters within 8GB VRAM envelope; monitors loss convergence and saves adapter weights. |
 | [`notebooks/nb_05_post_training_eval.ipynb`](notebooks/nb_05_post_training_eval.ipynb) | **Stage 5: Comparative Analysis** | Evaluates post-training checkpoints (M1 vs M2 vs M3); renders multi-model degradation curves, AUC, and delta tables. |
-
+| [`notebooks/nb_06_evaluation_suite.ipynb`](notebooks/nb_06_evaluation_suite.ipynb) | **Unified Evaluation Suite** | Single authoritative 7-rung benchmark harness ($L_0$–$L_5$ + LiveCodeBench $Ctrl$) with per-cell snapshot safeguards. |
+| [`notebooks/arm_01_inv_grpo.ipynb`](notebooks/arm_01_inv_grpo.ipynb) | **Arm 1: Inv-GRPO (Primary)** | Micro-batched Invariance-Regularized Policy Optimization ($3.03\text{ GB}$ VRAM); live advantage & rollout curves. |
+| [`notebooks/arm_01b_standard_grpo.ipynb`](notebooks/arm_01b_standard_grpo.ipynb) | **Arm 0: Standard GRPO** | Direct ablation anchor implementing DeepSeekMath GRPO on isolated prompts to quantify $\Delta \text{AUC}_{\text{Inv}}$. |
+| [`notebooks/arm_02_contrastive_sft.ipynb`](notebooks/arm_02_contrastive_sft.ipynb) | **Arm 2: Contrastive SFT / DPO** | Preference-guided unlearning of memorized HumanEval shortcuts on transformed problem distributions. |
+| [`notebooks/arm_03_ast_rl.ipynb`](notebooks/arm_03_ast_rl.ipynb) | **Arm 3: AST-RL** | Structure-guided policy optimization pairing sandbox execution with normalized Abstract Syntax Tree distances. |
+| [`notebooks/arm_04_step_rlvr.ipynb`](notebooks/arm_04_step_rlvr.ipynb) | **Arm 4: Step-RLVR** | Stepwise contract verifier awarding dense partial credits across intermediate sub-routine boundaries. |
 
 ---
 
 ## 14. Research Authors, Supervision & Citation
 
 ### Research Authors
-* **Omar Abdelhamid** — AI R&D Engineer, Orange Innovation Labs
+* **Omar Abdelhamid** — AI R&D Engineer, Orange Innovation Labs  
+  🎓 *Microsoft Certified: Azure AI Engineer Associate (Exam AI-103)*  
+  🔗 [Official Digital Credential Verification](https://learn.microsoft.com/api/credentials/share/en-gb/OmarAbdelhamid-8655/5628E1B02C79DA17?sharingId=C1C86A19180C72A2)
 * **Nour Walid** — AI R&D Engineer, Orange Innovation Labs
 
 ### Research Supervision
-* **Dr. Ghada Soliman** — Head of Software Engineering & AI Research, Orange Innovation Labs
+* **Dr. Ghada Khoriba (Soliman)** — Head of Software Engineering & AI Research, Orange Innovation Labs / Faculty of Engineering
 
 ### BibTeX Citation
 
 ```bibtex
 @article{abdelhamid2026reductionladder,
   title     = {Reduction Ladder for Code: Probing and Resolving Shortcut Learning vs. Transferable Reasoning in Code SLMs via Multi-Arm Invariance Mitigation},
-  author    = {Abdelhamid, Omar and Walid, Nour and Soliman, Ghada},
+  author    = {Abdelhamid, Omar and Walid, Nour and Khoriba, Ghada},
   journal   = {Technical Research Report -- Orange Innovation Labs AI R\&D},
   year      = {2026},
   institution = {Orange Innovation Labs},

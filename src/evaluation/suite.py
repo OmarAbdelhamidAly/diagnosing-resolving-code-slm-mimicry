@@ -48,6 +48,13 @@ from .registry import BenchmarkRegistry, LEVEL_ORDER
 from . import metrics as M
 
 
+# ── Harness Version ───────────────────────────────────────────────────────────
+# Bump this string whenever the evaluation logic changes (e.g. sandbox fixes,
+# new metrics, test-format handling).  The notebook's validate_report() helper
+# uses this to automatically reject stale cached reports and force a re-run.
+HARNESS_VERSION = "1.2.0"  # 1.2.0: dynamic multi-level indentation, typing imports, prompt ellipsis sanitization, robust LCB execution
+
+
 class EvaluationSuite:
     """Model-agnostic evaluation orchestrator.
 
@@ -295,6 +302,8 @@ class EvaluationSuite:
         data["degradation_slope"] = getattr(suite, "_degradation_slope", None)
         data["ood_score"] = getattr(suite, "_ood_score", None)
         data["overthinking_tax"] = getattr(suite, "_overthinking_tax", None)
+        # Stamp harness version so notebooks can detect stale cached reports
+        data["harness_version"] = HARNESS_VERSION
         with open(path, "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=2, default=str)
         print(f"  [SAVE] eval_report.json → {path}")
@@ -304,3 +313,4 @@ class EvaluationSuite:
         """Load a previously saved eval_report.json as a plain dict."""
         with open(json_path, "r", encoding="utf-8") as fh:
             return json.load(fh)
+
