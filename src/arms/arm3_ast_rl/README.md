@@ -76,12 +76,51 @@ Arm 3 grounds its methodology in recent breakthroughs in AST comparison and stru
 └─────────────────────────────────┘       └─────────────────────────────────┘
 ```
 
-1. **TreeDiff: Structural Code Comparison (ASE 2025) [1]:**
-   Establishes that evaluating code similarity via normalized AST edit distances provides an order-of-magnitude more reliable metric of algorithmic equivalence than surface token BLEU or CodeBLEU.
-2. **VeriSeek: Structure-Guided Code Verification (ICSE 2025) [2]:**
-   Proves that providing intermediate structural syntax tree rewards during generation prevents language models from getting trapped in dead-end reasoning loops.
-3. **PyCross: Canonical AST Representations (2024) [3]:**
-   Formalizes the canonical normalization of variable scopes in Python ASTs, demonstrating that mapping identifiers to abstract symbol classes isolates semantic logic.
+### 🔬 Exhaustive Scientific Literature & Study Guide
+
+The theoretical and algorithmic architecture of **Arm 3 (AST-RL)** unites three foundational disciplines across reinforcement learning theory, compiler intermediate representation, and execution-guided code generation:
+
+---
+
+#### 1. Policy Invariance & Reward Shaping — Mathematical Foundation for Auxiliary Dense Rewards
+* **Paper Title:** *Policy Invariance Under Reward Transformations: Theory and Application to Reward Shaping*
+* **Authors:** Andrew Y. Ng, Daishi Harada, Stuart Russell (UC Berkeley / Stanford University, ICML 1999)
+* **Direct Scientific Links:**
+  * 📄 [Direct PDF Download (UC Berkeley EECS)](https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf)
+* **Priority Sections for Technical Study:**
+  * **Section 3 (Potential-Based Shaping Functions):** Formal derivation of the necessary and sufficient condition for reward shaping functions to guarantee that the optimal policy $\pi^*$ under the shaped reward $\mathcal{R}'(s, a, s') = \mathcal{R}(s, a, s') + F(s, a, s')$ remains invariant to the original MDP.
+  * **Theorem 1 & 2 (Policy Invariance):** Mathematical proof that potential-based shaping preserves policy consistency across infinite- and finite-horizon Markov Decision Processes, preventing the agent from exploiting unintended loops or "reward hacks".
+* **Bridge to Our Implementation:**
+  * Implemented in [`src/arms/arm3_ast_rl/reward_engine.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/reward_engine.py): Code execution in RL suffers from severe sparsity (the agent receives $0.0$ reward on failing 1 out of 10 test assertions despite generating $90\%$ of the logic correctly). By grounding auxiliary rewards in AST similarity ($\beta \cdot \text{simAST}$ with $\beta=0.3$), we provide continuous gradient feedback without distorting the final verification objective $\mathcal{R}_{\text{exec}}$.
+
+---
+
+#### 2. CodeBLEU & AST Representation — Overcoming Lexical Bias
+* **Paper Title:** *CodeBLEU: a Method for Automatic Evaluation of Code Synthesis*
+* **Authors:** Shuo Ren, Daya Guo, Shuai Lu, Long Zhou, Shujie Liu, Duyu Tang, Neel Sundaresan, Ming Zhou (Microsoft Research, 2020)
+* **Direct Scientific Links:**
+  * 🔗 [arXiv Abstract Page (2009.10297)](https://arxiv.org/abs/2009.10297)
+  * 📄 [Direct PDF Download](https://arxiv.org/pdf/2009.10297)
+* **Priority Sections for Technical Study:**
+  * **Section 2 & 3 (Syntax and Data-Flow Tree Matching):** Explains why standard n-gram metrics (BLEU, ROUGE) catastrophically fail on code because code exhibits strict syntactic grammars and variable renaming invariance.
+  * **Section 3.2 (AST Node Sequence Parsing):** Derivation of Abstract Syntax Tree node traversal matching. Shows that comparing tree node types isolates control flow (loops, conditionals, function definitions) from superficial variable names.
+* **Bridge to Our Implementation:**
+  * Implemented in [`src/arms/arm3_ast_rl/ast_engine.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/ast_engine.py): We construct an `ASTNormalizer` that systematically replaces variable identifiers with canonical `_v` and parameters with `_a`. We then calculate a composite structural score:
+    $$\text{simAST}(y, y^*) = 0.6 \cdot \text{Jaccard}(\mathcal{S}_y, \mathcal{S}^*) + 0.4 \cdot \text{LengthRatio}(y, y^*)$$
+
+---
+
+#### 3. CodeRL — Reinforcement Learning with Compiler and Unit Test Feedback
+* **Paper Title:** *CodeRL: Mastering Code Generation through Pretrained Models and Deep Reinforcement Learning*
+* **Authors:** Hung Le, Yue Wang, Akhilesh Deepak Gotmare, Silvio Savarese, Steven C.H. Hoi (Salesforce Research, NeurIPS 2022)
+* **Direct Scientific Links:**
+  * 🔗 [arXiv Abstract Page (2207.01780)](https://arxiv.org/abs/2207.01780)
+  * 📄 [Direct PDF Download](https://arxiv.org/pdf/2207.01780)
+* **Priority Sections for Technical Study:**
+  * **Section 3 (Actor-Critic RL for Code Synthesis):** Formulation of code generation as a sequence of token generation decisions under an execution environment.
+  * **Section 3.2 (Fine-Grained Feedback Signals):** Distinguishes between syntax errors (`SyntaxError`), runtime exceptions (`ZeroDivisionError`, `IndexError`), and assertion failures, mapping each failure type to distinct credit signals.
+* **Bridge to Our Implementation:**
+  * Implemented in [`src/arms/arm3_ast_rl/trainer.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/trainer.py): If the generated completion throws a `SyntaxError` during AST parsing, $\text{simAST}$ is immediately clamped to $0.0$, heavily penalizing malformed code while rewarding executable, syntactically aligned rollouts.
 
 ---
 
