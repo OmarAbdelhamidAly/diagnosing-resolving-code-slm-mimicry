@@ -65,8 +65,8 @@ class StepwiseContractVerifier:
 
             res = self.sandbox.execute(
                 prompt=prompt,
-                generation=full_code,
-                test_code=test_code,
+                solution=full_code,
+                test=test_code,
                 entry_point=entry_point,
             )
             passed = res.passed
@@ -75,10 +75,14 @@ class StepwiseContractVerifier:
 
             step_results.append({
                 "name": name,
+                "Step": name,
                 "entry_point": entry_point,
                 "passed": passed,
+                "Passed": passed,
                 "weight": weight,
+                "Weight": weight,
                 "credits": round(credits, 3),
+                "Credits": round(credits, 3),
                 "error_message": res.error_message if not passed else None,
             })
 
