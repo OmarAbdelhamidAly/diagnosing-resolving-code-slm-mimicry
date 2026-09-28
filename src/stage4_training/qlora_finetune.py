@@ -168,11 +168,18 @@ class QLoRAFineTuner:
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        print(f"[QLoRA] Loading 4-bit NF4 model: '{self.model_name}'...")
+        # For single-GPU QLoRA training with Trainer/Accelerate, use explicit device mapping
+        # instead of "auto" to prevent Accelerate's prepare_model from encountering torch.device(None)
+        if torch.cuda.is_available():
+            train_device_map = {"": torch.cuda.current_device()}
+        else:
+            train_device_map = None
+
+        print(f"[QLoRA] Loading 4-bit NF4 model: '{self.model_name}' on device_map={train_device_map}...")
         model = AutoModelForCausalLM.from_pretrained(
             self.model_name,
             quantization_config=bnb_config,
-            device_map=self._settings.models.device_map,
+            device_map=train_device_map,
             trust_remote_code=True,
             cache_dir=hf_cache,
         )
@@ -267,7 +274,7 @@ class QLoRAFineTuner:
         )
 
         eff_batch = ta["per_device_train_batch_size"] * ta["gradient_accumulation_steps"]
-        print(f"\n[QLoRA] ▶ Starting {self.variant.upper()} SFT training...")
+        print(f"\n[QLoRA] [>>] Starting {self.variant.upper()} SFT training...")
         print(f"[QLoRA]   Variant:    {self.variant}")
         print(f"[QLoRA]   Data:       {self.data_path} ({len(raw_dataset):,} samples)")
         print(f"[QLoRA]   Output:     {output_dir}")
@@ -279,11 +286,11 @@ class QLoRAFineTuner:
         trainer.train()
 
         # 5. Save LoRA adapter
-        print(f"[QLoRA] ✅ Training complete. Saving LoRA adapter to '{output_dir}'...")
+        print(f"[QLoRA] [OK] Training complete. Saving LoRA adapter to '{output_dir}'...")
         trainer.model.save_pretrained(output_dir)
         tokenizer.save_pretrained(output_dir)
 
-        print(f"[QLoRA] ✅ Adapter saved successfully to '{output_dir}'")
+        print(f"[QLoRA] [OK] Adapter saved successfully to '{output_dir}'")
         return output_dir
 
     # ── VRAM estimation ─────────────────────────────────────────────────────
