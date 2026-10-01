@@ -152,20 +152,34 @@ class ContrastiveDPOTrainer:
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_use_double_quant=True,
+        train_device_map = {"": torch.cuda.current_device()} if torch.cuda.is_available() else None
+        use_quant = str(getattr(self.settings.models, "quantization", "none")).lower() not in (
+            "none", "null", "false", "bfloat16", "float16", "fp16", "bf16", ""
         )
+        torch_dtype = torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else (torch.float16 if torch.cuda.is_available() else torch.float32)
 
-        base_model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            quantization_config=bnb_config,
-            device_map="auto",
-            trust_remote_code=True,
-        )
-        base_model = prepare_model_for_kbit_training(base_model, use_gradient_checkpointing=True)
+        if use_quant:
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch_dtype,
+                bnb_4bit_use_double_quant=True,
+            )
+            base_model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                quantization_config=bnb_config,
+                device_map=train_device_map,
+                trust_remote_code=True,
+            )
+            base_model = prepare_model_for_kbit_training(base_model, use_gradient_checkpointing=True)
+        else:
+            print(f"[ContrastiveDPOTrainer] Loading UNQUANTIZED native model ({torch_dtype})...")
+            base_model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype=torch_dtype,
+                device_map=train_device_map,
+                trust_remote_code=True,
+            )
 
         peft_config = LoraConfig(
             r=self.settings.qlora.r,

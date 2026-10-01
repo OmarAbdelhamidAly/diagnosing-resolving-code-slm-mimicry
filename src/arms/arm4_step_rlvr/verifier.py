@@ -24,11 +24,118 @@ class StepContract:
     test: str
 
 
+import re
+
+
+def instrument_stepwise_test(test_src: str) -> str:
+    """Instruments benchmark test code to track stepwise assertion success rate.
+
+    Literature Basis:
+    - CodePRM: Process Reward Models for Code Reasoning (ACL 2025)
+    - ExecVerify: Stepwise Execution-Gated Verification (ICSE 2026)
+
+    Evaluates each test assertion independently so partial success receives dense credit.
+    """
+    lines = test_src.splitlines()
+    header = [
+        "import sys",
+        "_passed_contracts = 0",
+        "_total_contracts = 0",
+    ]
+    new_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("def check("):
+            new_lines.append(line)
+            indent = " " * (len(line) - len(line.lstrip()) + 4)
+            new_lines.append(f"{indent}global _passed_contracts, _total_contracts")
+            continue
+
+        if stripped.startswith("assert "):
+            indent = " " * (len(line) - len(line.lstrip()))
+            new_lines.append(f"{indent}_total_contracts += 1")
+            new_lines.append(f"{indent}try:")
+            new_lines.append(f"{indent}    {stripped}")
+            new_lines.append(f"{indent}    _passed_contracts += 1")
+            new_lines.append(f"{indent}except Exception:")
+            new_lines.append(f"{indent}    pass")
+        else:
+            new_lines.append(line)
+
+    footer = [
+        "",
+        "if '_total_contracts' in globals() and _total_contracts > 0:",
+        "    if _passed_contracts < _total_contracts:",
+        "        raise AssertionError(f'__STEPWISE_RESULT__:{_passed_contracts}:{_total_contracts}')",
+        "    else:",
+        "        pass  # All passed cleanly",
+    ]
+    return "\n".join(header + new_lines + footer)
+
+
 class StepwiseContractVerifier:
     """Evaluates multi-step code by executing independent sub-function contracts."""
 
     def __init__(self, sandbox: ICodeExecutor):
         self.sandbox = sandbox
+
+    def evaluate_task(self, full_code: str, task: Dict[str, Any]) -> Dict[str, Any]:
+        """Evaluates code on a task using explicit contracts or instrumented test assertions.
+
+        Implements genuine process verification (CodePRM ACL 2025 / ExecVerify ICSE 2026).
+        """
+        prompt = task.get("prompt", "")
+        entry_point = task.get("entry_point", "")
+        contracts = task.get("contracts")
+
+        if contracts:
+            return self.evaluate_steps(full_code, contracts, prompt=prompt)
+
+        test_code = task.get("test", "")
+        instrumented_test = instrument_stepwise_test(test_code)
+
+        res = self.sandbox.execute(
+            prompt=prompt,
+            solution=full_code,
+            test=instrumented_test,
+            entry_point=entry_point,
+        )
+
+        output_text = (res.error_message or "") + "\n" + (res.status or "")
+        match = re.search(r"__STEPWISE_RESULT__:(\d+):(\d+)", output_text)
+
+        if res.passed:
+            passed = 1
+            total = 1
+            reward = 1.0
+        elif match:
+            passed = int(match.group(1))
+            total = max(int(match.group(2)), 1)
+            reward = round(float(passed / total), 4)
+        else:
+            passed = 0
+            total = 1
+            reward = 0.0
+
+        return {
+            "total_stepwise_reward": reward,
+            "passed_contracts": passed,
+            "total_contracts": total,
+            "passed": res.passed,
+            "steps": [{
+                "name": f"Stepwise Verification ({passed}/{total})",
+                "Step": f"Stepwise Verification ({passed}/{total})",
+                "entry_point": entry_point,
+                "passed": res.passed,
+                "Passed": res.passed,
+                "weight": 1.0,
+                "Weight": 1.0,
+                "credits": reward,
+                "Credits": reward,
+                "error_message": res.error_message if not res.passed else None,
+            }],
+        }
 
     def evaluate_steps(
         self,

@@ -41,16 +41,22 @@ checkpoints/
 *.pth
 hf_cache/
 
-# Datasets & large JSONL files (re-generated via scripts/run_stage1_data.py)
+# Datasets & large JSONL files (re-generated via nb_01_data_pipeline.ipynb)
 data/ladder/*.jsonl
 data/distillation/*.jsonl
 !data/ladder/.gitkeep
 !data/distillation/.gitkeep
 
-# Output Results & logs
+# Evaluation outputs — raw logs
 results/**/*.raw.jsonl
 *.log
 wandb/
+
+# Kaggle upload packages (regenerated via scripts/prepare_kaggle_upload.py)
+kaggle_upload/
+
+# Large evaluation zip (re-downloadable from Kaggle)
+evaluation_results.zip
 
 # IDE & OS files
 .vscode/
@@ -61,12 +67,14 @@ wandb/
 .DS_Store
 Thumbs.db
 
-# Proposal / confidential research reports (private, not for public repo)
+# Proposal / confidential research reports
 proposal/
-
 *.pdf
 PROFILE_README.md
 WORKFLOW.md
-scripts/
+
+# Unsloth compiled cache
 unsloth_compiled_cache/
 
+# Scratch / one-off debugging scripts
+scratch/

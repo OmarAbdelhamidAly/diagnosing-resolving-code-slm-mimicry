@@ -61,8 +61,10 @@ class BenchmarkRegistry:
         data_dir: Optional[str | Path] = None,
         level_files: Optional[Dict[str, str]] = None,
         max_tasks_per_level: Optional[int] = None,
+        cache_dir: Optional[str | Path] = None,
     ) -> None:
-        self._data_dir = Path(data_dir) if data_dir else _DEFAULT_DATA_DIR
+        effective_dir = data_dir or cache_dir
+        self._data_dir = Path(effective_dir) if effective_dir else _DEFAULT_DATA_DIR
         self._file_map = {**_DEFAULT_FILES, **(level_files or {})}
         self._max_tasks = max_tasks_per_level
         self._tasks: Dict[str, List[BenchmarkTask]] = {}

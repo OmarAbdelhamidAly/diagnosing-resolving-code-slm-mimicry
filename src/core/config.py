@@ -179,6 +179,11 @@ def load_settings(config_path: Optional[str] = None) -> Settings:
 
     # Apply environment variable overrides if present
     storage_dict = raw_data.get("storage", {})
+    if sys.platform != "win32":
+        hf_val = storage_dict.get("hf_cache_dir", "")
+        if isinstance(hf_val, str) and (":" in hf_val or hf_val.startswith(("/D:", "/C:", "/E:"))):
+            storage_dict["hf_cache_dir"] = os.getenv("HF_HOME") or os.getenv("HF_CACHE_DIR") or os.path.expanduser("~/.cache/huggingface")
+
     if os.getenv("HF_HOME") or os.getenv("HF_CACHE_DIR"):
         storage_dict["hf_cache_dir"] = os.getenv("HF_CACHE_DIR") or os.getenv("HF_HOME")
     if os.getenv("LADDER_CACHE_DIR"):

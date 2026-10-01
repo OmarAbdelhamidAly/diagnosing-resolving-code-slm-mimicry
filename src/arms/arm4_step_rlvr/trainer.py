@@ -62,21 +62,34 @@ class StepRLVRTrainer:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        print("[StepRLVRTrainer] Loading 4-bit NF4 quantized model...")
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_use_double_quant=True,
+        use_quant = str(getattr(self.settings.models, "quantization", "none")).lower() not in (
+            "none", "null", "false", "bfloat16", "float16", "fp16", "bf16", ""
         )
+        torch_dtype = torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else (torch.float16 if torch.cuda.is_available() else torch.float32)
 
-        base_model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            quantization_config=bnb_config,
-            device_map="auto",
-            trust_remote_code=True,
-        )
-        base_model = prepare_model_for_kbit_training(base_model, use_gradient_checkpointing=True)
+        if use_quant:
+            print("[StepRLVRTrainer] Loading 4-bit NF4 quantized model...")
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch_dtype,
+                bnb_4bit_use_double_quant=True,
+            )
+            base_model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                quantization_config=bnb_config,
+                device_map="auto",
+                trust_remote_code=True,
+            )
+            base_model = prepare_model_for_kbit_training(base_model, use_gradient_checkpointing=True)
+        else:
+            print(f"[StepRLVRTrainer] Loading UNQUANTIZED native model ({torch_dtype})...")
+            base_model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype=torch_dtype,
+                device_map="auto",
+                trust_remote_code=True,
+            )
 
         peft_config = LoraConfig(
             r=self.settings.qlora.r,
@@ -195,23 +208,15 @@ class StepRLVRTrainer:
         for step in pbar:
             task = tasks[(step - 1) % len(tasks)]
             prompt = task.get("prompt", "")
-            contracts = task.get("contracts")
-            if not contracts:
-                # Synthesize standard contract from test
-                test_code = task.get("test", "")
-                entry_point = task.get("entry_point", "")
-                contracts = [
-                    StepContract(name="Complete Contract", entry_point=entry_point, weight=1.0, test=test_code)
-                ]
 
             # 1. Rollout
             fmt_prompt = self._format_prompt(prompt)
             tokens, solutions, prompt_len = self._generate_group(fmt_prompt)
 
-            # 2. Score completions via Stepwise Contract Verifier
+            # 2. Score completions via Stepwise Contract Verifier (CodePRM / ExecVerify)
             rewards = []
             for sol in solutions:
-                eval_res = self.verifier.evaluate_steps(sol, contracts, prompt=prompt)
+                eval_res = self.verifier.evaluate_task(sol, task)
                 rewards.append(eval_res["total_stepwise_reward"])
 
             # 3. Advantage normalization

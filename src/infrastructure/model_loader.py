@@ -25,11 +25,13 @@ class QuantizedModelRunner(IModelRunner):
         adapter_path: Optional[str] = None,
         device_map: Optional[str] = None,
         cache_dir: Optional[str] = None,
+        quantization: Optional[str] = None,
     ):
         self.model_name_or_path = model_name_or_path or settings.models.student_model
         self.adapter_path = adapter_path
         self.device_map = device_map or settings.models.device_map
         self.cache_dir = cache_dir or settings.storage.hf_cache_dir
+        self.quantization = quantization if quantization is not None else getattr(settings.models, "quantization", "none")
         self.tokenizer = None
         self.model = None
         self._load_model()
@@ -45,21 +47,42 @@ class QuantizedModelRunner(IModelRunner):
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
 
-            bnb_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-                bnb_4bit_use_double_quant=True
+            use_quant = str(self.quantization).lower() not in (
+                "none", "null", "false", "bfloat16", "float16", "fp16", "bf16", ""
             )
 
-            print(f"[MODEL] Loading 4-bit NF4 quantized model: '{self.model_name_or_path}'...")
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_name_or_path,
-                quantization_config=bnb_config,
-                device_map=self.device_map,
-                trust_remote_code=True,
-                cache_dir=self.cache_dir,
-            )
+            # Determine precision
+            if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+                compute_dtype = torch.bfloat16
+            elif torch.cuda.is_available():
+                compute_dtype = torch.float16
+            else:
+                compute_dtype = torch.float32
+
+            if use_quant:
+                bnb_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=compute_dtype,
+                    bnb_4bit_use_double_quant=True
+                )
+                print(f"[MODEL] Loading 4-bit NF4 quantized model: '{self.model_name_or_path}'...")
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name_or_path,
+                    quantization_config=bnb_config,
+                    device_map=self.device_map,
+                    trust_remote_code=True,
+                    cache_dir=self.cache_dir,
+                )
+            else:
+                print(f"[MODEL] Loading UNQUANTIZED native model ({compute_dtype}): '{self.model_name_or_path}'...")
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name_or_path,
+                    torch_dtype=compute_dtype,
+                    device_map=self.device_map,
+                    trust_remote_code=True,
+                    cache_dir=self.cache_dir,
+                )
 
             if self.adapter_path:
                 from peft import PeftModel
@@ -179,3 +202,8 @@ class QuantizedModelRunner(IModelRunner):
     def _extract_code(self, raw_text: str) -> str:
         """Delegate to module-level ``extract_code()`` — single source of truth."""
         return extract_code(raw_text)
+
+
+# Clean alias for code that prefers not to reference 'Quantized'
+ModelRunner = QuantizedModelRunner
+

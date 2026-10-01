@@ -1,606 +1,580 @@
-# Diagnosing and Resolving Code SLM Mimicry
+<div align="center">
 
-> **Probing and Resolving Shortcut Learning vs. Transferable Algorithmic Reasoning in Code-Generating SLMs & LLMs**  
-> *A Research Initiative by Orange Innovation Labs (AI R&D Division)*
+# 🔬 Diagnosing & Resolving Code SLM Mimicry
 
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=for-the-badge&logo=python)](https://www.python.org/)
-[![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4%2B-EE4C2C.svg?style=for-the-badge&logo=pytorch)](https://pytorch.org/)
-[![HuggingFace Transformers](https://img.shields.io/badge/HuggingFace_Transformers-4.44%2B-yellow.svg?style=for-the-badge)](https://huggingface.co/)
-[![Unsloth / BitsAndBytes](https://img.shields.io/badge/Unsloth-4--bit_NF4-green.svg?style=for-the-badge)](https://github.com/unslothai/unsloth)
-[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)](LICENSE)
+### *Probing Shortcut Learning vs. Transferable Algorithmic Reasoning in Code-Generating SLMs*
 
----
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white"/></a>
+  <a href="https://pytorch.org/"><img src="https://img.shields.io/badge/PyTorch-2.4%2B-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white"/></a>
+  <a href="https://huggingface.co/"><img src="https://img.shields.io/badge/🤗_Transformers-4.44%2B-FFD21E?style=for-the-badge"/></a>
+  <a href="https://github.com/TimDettmers/bitsandbytes"><img src="https://img.shields.io/badge/BitsAndBytes-4bit_NF4-00C853?style=for-the-badge"/></a>
+  <a href="https://github.com/huggingface/peft"><img src="https://img.shields.io/badge/PEFT-QLoRA-7B2FBE?style=for-the-badge"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-B0BEC5?style=for-the-badge"/></a>
+</p>
 
-## Table of Contents
+<p align="center">
+  <img src="https://img.shields.io/badge/Base_Model-Qwen2.5--Coder--1.5B-0288D1?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Benchmarks-764_Tasks_(L0→L5)-43A047?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Models_Trained-7_(M1→M7)-E53935?style=flat-square"/>
+  <img src="https://img.shields.io/badge/VRAM_Budget-8GB_RTX_3070-FB8C00?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Training_Steps-500_per_Arm-6A1B9A?style=flat-square"/>
+</p>
 
-1. [Executive Summary & Core Research Questions](#1-executive-summary--core-research-questions)
-2. [Foundational Rationale: Why the Code Domain?](#2-foundational-rationale-why-the-code-domain)
-3. [The Reduction Ladder Diagnostic Framework (L0–L5 + Control)](#3-the-reduction-ladder-diagnostic-framework-l0l5--control)
-   - [Ladder Levels & Hugging Face Grounding](#ladder-levels--hugging-face-grounding)
-   - [Concrete Transformation Walkthrough (Two Sum across L0–L5)](#concrete-transformation-walkthrough-two-sum-across-l0l5)
-   - [Theoretical Contrast: Reduction Ladder vs. Code-Rewriting (MRI)](#theoretical-contrast-reduction-ladder-vs-code-rewriting-mri)
-4. [Comprehensive Literature Taxonomy & Theoretical Foundations](#4-comprehensive-literature-taxonomy--theoretical-foundations)
-   - [The Foundational Six Papers: Limits of Reasoning](#the-foundational-six-papers-limits-of-reasoning)
-   - [Code-Domain Memorization & Contamination Literature](#code-domain-memorization--contamination-literature)
-   - [Multi-Dimensional Evaluation Dimensions Beyond Correctness](#multi-dimensional-evaluation-dimensions-beyond-correctness)
-   - [State-of-the-Art Mitigation Paradigms (2024–2026)](#state-of-the-art-mitigation-paradigms-20242026)
-5. [Model Selection Rationale & Capacity Axis](#5-model-selection-rationale--capacity-axis)
-   - [Why Qwen2.5-Coder-1.5B-Instruct?](#why-qwen25-coder-15b-instruct)
-   - [Survey of Models in Reference Literature](#survey-of-models-in-reference-literature)
-   - [Three-Tier Capacity Axis](#three-tier-capacity-axis)
-6. [Cross-Paper Comparison Methodology](#6-cross-paper-comparison-methodology)
-   - [Five-Axis Comparison Framework](#five-axis-comparison-framework)
-   - [Direct Reproduction & Extension of EvoEval Baselines](#direct-reproduction--extension-of-evoeval-baselines)
-   - [Cross-Paper Benchmark Alignment Matrix](#cross-paper-benchmark-alignment-matrix)
-   - [Statistical Rigor & Reporting Standards](#statistical-rigor--reporting-standards)
-7. [Prioritized Multi-Arm Mitigation Framework (P1–P4)](#7-prioritized-multi-arm-mitigation-framework-p1p4)
-   - [Arm 1 (P1 - Primary): Invariance-Regularized GRPO (Inv-GRPO)](#arm-1-p1---primary-invariance-regularized-grpo-inv-grpo)
-   - [Arm 2 (P2 - SFT): Contrastive Thought-Template SFT](#arm-2-p2---sft-contrastive-thought-template-sft)
-   - [Arm 3 (P3 - Syntax): AST-Guided Policy Optimization (AST-RL)](#arm-3-p3---syntax-ast-guided-policy-optimization-ast-rl)
-   - [Arm 4 (P4 - Process): Stepwise Execution-Gated RLVR (Step-RLVR)](#arm-4-p4---process-stepwise-execution-gated-rlvr-step-rlvr)
-   - [Intervention Paradigm Analysis: Distillation vs. RLVR vs. RLIR](#intervention-paradigm-analysis-distillation-vs-rlvr-vs-rlir)
-8. [The Six-Model Comparative Experimental Suite (M1–M6)](#8-the-six-model-comparative-experimental-suite-m1m6)
-9. [Mathematical Formulation of Multi-Dimensional Evaluation Metrics](#9-mathematical-formulation-of-multi-dimensional-evaluation-metrics)
-10. [Clean Architecture Software Engineering Blueprint](#10-clean-architecture-software-engineering-blueprint)
-11. [Exhaustive 12-Week (3-Month) Execution Roadmap](#11-exhaustive-12-week-3-month-execution-roadmap)
-12. [Hardware Feasibility & Edge VRAM Budget (RTX 3070 8GB)](#12-hardware-feasibility--edge-vram-budget-rtx-3070-8gb)
-13. [Installation, Setup & Quickstart Guide](#13-installation-setup--quickstart-guide)
-14. [Research Authors, Supervision & Citation](#14-research-authors-supervision--citation)
+> **Research Initiative — Orange Innovation Labs (AI R&D Division)**  
+> *Developed at Cairo, Egypt · Released under the MIT License*
+
+</div>
 
 ---
 
-## 1. Executive Summary & Core Research Questions
+## 📋 Table of Contents
 
-Small Language Models (SLMs) in the 1–3B parameter bracket (exemplified by `Qwen2.5-Coder-1.5B-Instruct`) are foundational to the future of private, low-latency, on-device, and edge intelligence. Within telecommunications operators like **Orange Innovation Labs**, edge SLMs drive critical workloads: autonomous network script patching, infrastructure configuration verification, self-healing diagnostic routines, and localized developer copilot workflows.
-
-Despite stellar pass rates on static benchmarks, modern code-generating language models suffer from a fundamental **Reasoning vs. Memorization Crisis**:
-
-```
-           ┌────────────────────────────────────────────────────────┐
-           │              PROMPT PRESENTATION STYLES                │
-           └───────────────────────────┬────────────────────────────┘
-                                       │
-            ┌──────────────────────────┴──────────────────────────┐
-            ▼                                                     ▼
-┌───────────────────────┐                             ┌───────────────────────┐
-│ L0: Verbatim Problem  │                             │ L3: Novel Narrative   │
-│ (Standard HumanEval)  │                             │ (EvoEval Creative)    │
-└───────────┬───────────┘                             └───────────┬───────────┘
-            │                                                     │
-            ▼                                                     ▼
-┌───────────────────────┐                             ┌───────────────────────┐
-│ Model Output: 85% Acc │                             │ Model Output: 38% Acc │
-│ Pattern Retrieval     │                             │ CATASTROPHIC COLLAPSE │
-└───────────────────────┘                             └───────────────────────┘
-```
-
-1. **Superficial Pattern Matching over Latent Planning:** When presented with canonical problems verbatim, models recall memorized tokens. However, trivial semantic-preserving surface transformations (e.g., variable obfuscation, helper function abstraction, or narrative reframing) trigger **catastrophic performance collapse**.
-2. **SFT Memorization Bias:** Standard Supervised Fine-Tuning (SFT) on reasoning traces often teaches models the *syntactic formatting* of Chain-of-Thought (CoT) without inducing invariant underlying logic.
-3. **RLVR Shortcut Learning & Reward Hacking:** Standard Reinforcement Learning with Verifiable Rewards (RLVR) optimizes for unit-test execution passes on single prompts, frequently converging on superficial shortcut heuristics that fail under out-of-distribution variations.
-
-### Central Research Questions
-
-* **RQ1 (The Diagnostic Boundary):** At which exact structural transformation level ($\ell^*$) does a code SLM collapse, and how does the error distribution (on-path execution slip vs. off-path logic loss vs. wrong-template shortcut dump) differ systematically across parameter capacities ($\sim$1.5B vs. $\sim$7B vs. Frontier)?
-* **RQ2 (The Mitigation Ceiling):** Can a multi-view invariance objective (**Inv-GRPO**) regularize policy rollouts during training to break template mimicry, delay the collapse point ($\Delta\ell^* \ge 2$), and elevate generalization with zero inference-time latency penalty?
+1. [Executive Summary](#1-executive-summary)
+2. [The Core Problem: Mimicry vs. Reasoning](#2-the-core-problem-mimicry-vs-reasoning)
+3. [Reduction Ladder Framework (L0–L5 + Control)](#3-reduction-ladder-framework-l0l5--control)
+4. [7-Model Experimental Suite (M1–M7)](#4-7-model-experimental-suite-m1m7)
+5. [Multi-Arm Mitigation Architecture](#5-multi-arm-mitigation-architecture)
+6. [Evaluation Metrics & Diagnostics](#6-evaluation-metrics--diagnostics)
+7. [Literature Foundations](#7-literature-foundations)
+8. [Codebase Architecture](#8-codebase-architecture)
+9. [Installation & Quickstart](#9-installation--quickstart)
+10. [Notebooks & Workflow](#10-notebooks--workflow)
+11. [Hardware Budget](#11-hardware-budget)
+12. [Results & Key Findings](#12-results--key-findings)
+13. [Citation](#13-citation)
 
 ---
 
-## 2. Foundational Rationale: Why the Code Domain?
+## 1. Executive Summary
 
-A pivotal architectural and scientific design choice in this research is our exclusive focus on **programmatic code synthesis** rather than mathematical word problems (GSM8K/MATH) or natural language QA.
+Small Language Models (SLMs) in the **1–3B parameter range** are critical for private, low-latency, on-device deployments — especially within telecom operators like Orange Innovation Labs, where edge SLMs drive autonomous network script patching, infrastructure verification, and developer copilot workflows.
+
+Despite stellar pass rates on static benchmarks, these models suffer from a fundamental **Mimicry Crisis**:
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        WHY CODE IS THE OPTIMAL REASONING LAB                          │
-├────────────────────────────────┬───────────────────────────────────────────────────────┤
-│ 1. Objective Ground-Truth      │ Zero LLM-judge bias; deterministic unit-test pass/fail│
-│    Sandbox Verification        │ in isolated subprocesses with sub-millisecond precision│
-├────────────────────────────────┼───────────────────────────────────────────────────────┤
-│ 2. AST Isomorphism vs.         │ Variable renaming & reordering mutate 100% of surface │
-│    Surface Paraphrasing        │ tokens while holding operational semantics invariant. │
-├────────────────────────────────┼───────────────────────────────────────────────────────┤
-│ 3. Combinatorial State Space   │ Code demands multi-step invariant tracking; shortcut  │
-│    & Edge-Case Fragility       │ pattern-matching breaks catastrophically on edges.    │
-├────────────────────────────────┼───────────────────────────────────────────────────────┤
-│ 4. Direct Industrial Impact    │ Hardening code SLMs empowers private edge-telecom     │
-│    for Orange Infrastructure   │ automation without multi-billion-parameter cloud APIs.│
-└────────────────────────────────┴───────────────────────────────────────────────────────┘
+  HumanEval (L0): 85% Pass@1   ──────────►   EvoEval Creative (L3): 38% Pass@1
+                                                           ⬇
+                                              CATASTROPHIC PERFORMANCE COLLAPSE
+                                              (Same algorithm, different surface framing)
+```
+
+**This project answers two questions:**
+
+| RQ | Question | Method |
+|:---:|---|---|
+| **RQ1** | At which transformation level does a code SLM collapse, and what is its error signature? | 7-rung Reduction Ladder · 764 tasks · Error taxonomy |
+| **RQ2** | Can multi-view invariance regularization break mimicry and delay collapse by ≥2 rungs? | Inv-GRPO (Arm 1) · 4 mitigation arms · 7-model comparison |
+
+---
+
+## 2. The Core Problem: Mimicry vs. Reasoning
+
+### Why Code Is the Optimal Reasoning Lab
+
+| Property | Advantage |
+|---|---|
+| **Objective Verification** | Unit tests give binary ground-truth — zero LLM-judge bias |
+| **AST Isomorphism** | Variable renaming mutates 100% of surface tokens while holding semantics invariant |
+| **Shortcut Visibility** | Lexical pattern-matching fails *cleanly and measurably* on edge cases |
+| **Industrial Relevance** | Hardening edge SLMs removes dependency on cloud APIs for telecom automation |
+
+### The Three Failure Modes
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  FAILURE MODE 1: SFT Memorization Bias                              │
+│  ─────────────────────────────────────────────────────────────────  │
+│  SFT teaches the *syntactic formatting* of CoT without              │
+│  inducing invariant algorithmic logic.                              │
+│                                                                     │
+│  FAILURE MODE 2: RLVR Reward Shortcut                               │
+│  ─────────────────────────────────────────────────────────────────  │
+│  Standard RLVR optimizes for unit-test passes on single prompts,    │
+│  converging on heuristics that fail under surface transformation.   │
+│                                                                     │
+│  FAILURE MODE 3: Template Retrieval (Mimicry)                       │
+│  ─────────────────────────────────────────────────────────────────  │
+│  Model retrieves the memorized L0 canonical solution verbatim       │
+│  when it sees familiar keywords — ignoring semantic differences.    │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. The Reduction Ladder Diagnostic Framework (L0–L5 + Control)
+## 3. Reduction Ladder Framework (L0–L5 + Control)
 
-To eliminate the noise, cost, and hallucination risks of unverified synthetic datasets, our **Reduction Ladder** grounds each difficulty level in established, peer-reviewed benchmarks hosted on Hugging Face.
-
-```
-  L0: Verbatim Classic Baseline    ──►  openai/openai_humaneval (164 tasks)
-   │
-  L1: Format & Specification Shift ──►  evoeval/EvoEval_subtle  (100 tasks)
-   │
-  L2: Structural ToolUse Shift     ──►  evoeval/EvoEval_tool_use (100 tasks)
-   │
-  L3: Creative Narrative Reframe   ──►  evoeval/EvoEval_creative (100 tasks)
-   │
-  L4: Constraint Augmentation      ──►  evoeval/EvoEval_difficult (100 tasks)
-   │
-  L5: Cross-Concept Composition    ──►  evoeval/EvoEval_combine (100 tasks)
-   │
- [Ctrl]: Temporal Firewall Control ──►  livecodebench/code_generation_lite
-```
-
-### Ladder Levels & Hugging Face Grounding
-
-| Level | Benchmark Name | Hugging Face Dataset Path | Exact Transformation Operation | Probing Objective |
-|:---:|---|---|---|---|
-| **L0** | HumanEval Standard | `openai/openai_humaneval` | Canonical verbatim classic benchmark problems. | Raw memorization / template retrieval baseline. |
-| **L1** | EvoEval Subtle | `evoeval/EvoEval_subtle` | Minor formatting, input types, & specification nuances. | Robustness to trivial prompt formatting shifts. |
-| **L2** | EvoEval ToolUse | `evoeval/EvoEval_tool_use` | Helper function integration & API abstraction layers. | Structural adaptation & modular contract adherence. |
-| **L3** | EvoEval Creative | `evoeval/EvoEval_creative` | Novel narrative context for identical algorithmic logic. | Logic recognition beneath novel storytelling. |
-| **L4** | EvoEval Difficult | `evoeval/EvoEval_difficult` | Core algorithm + strict extra boundary constraints. | Algorithmic adaptation vs. rigid template retrieval. |
-| **L5** | EvoEval Combine | `evoeval/EvoEval_combine` | Multi-algorithmic composition and concept integration. | Multi-concept composition & genuine generalization. |
-| **Ctrl**| LiveCodeBench Lite | `livecodebench/code_generation_lite`| Clean, post-cutoff temporal problem feed. | 0% contamination temporal firewall validation. |
-
----
-
-### Concrete Transformation Walkthrough (Two Sum across L0–L5)
-
-To understand how semantics remain invariant while surface complexity shifts, consider the canonical *Two Sum* problem:
-
-* **L0 (Verbatim Classic):**
-  ```python
-  def two_sum(nums: list[int], target: int) -> list[int]:
-      """Given an array of integers nums and an integer target, 
-      return indices of the two numbers such that they add up to target."""
-  ```
-* **L1 (Format / Subtle Shift):**
-  ```python
-  def parse_and_find_indices(data_str: str, target: int) -> tuple[int, int]:
-      """Input is a comma-delimited string of numbers '2,7,11,15'. 
-      Parse values and return 0-indexed integer tuple of the matching pair."""
-  ```
-* **L2 (ToolUse / Structural Abstraction):**
-  ```python
-  def find_pair_with_tool(seq: list[int], target: int, lookup_helper) -> list[int]:
-      """Implement pair searching by calling the pre-defined helper function 
-      lookup_helper(table, key) to manage complement queries."""
-  ```
-* **L3 (Creative Narrative Reframing - Telecom Context):**
-  ```python
-  def match_orange_transceivers(bandwidth_units: list[int], gateway_cap: int) -> list[int]:
-      """In an Orange 5G core network pool, n transceivers operate with bandwidths b_1...b_n.
-      Identify the IDs of the two transceivers whose combined throughput matches gateway_cap."""
-  ```
-* **L4 (Boundary Constraint Augmentation):**
-  ```python
-  def match_transceivers_multi_zone(bandwidths: list[int], zones: list[str], cap: int) -> list[int]:
-      """Same as L3, but the two selected transceivers must reside in DIFFERENT 
-      availability zones (requiring tracking secondary categorical attributes)."""
-  ```
-* **L5 (Cross-Concept Composition):**
-  ```python
-  def schedule_optimal_dual_tasks(tasks: list[dict], total_limit: int) -> list[int]:
-      """Given tasks with bandwidth demands and execution windows, identify two concurrent 
-      tasks summing to total_limit while MINIMIZING total scheduling fragmentation."""
-  ```
-
----
-
-### Theoretical Contrast: Reduction Ladder vs. Code-Rewriting (MRI)
+Each rung is grounded in **peer-reviewed, publicly available HuggingFace benchmarks** — no synthetic hallucinated data.
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                               THEORETICAL DICHOTOMY                                    │
-├────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                        │
-│   Code-Rewriting (MRI Approach - Yang et al., 2025):                                   │
-│   ┌────────────────────────┐         ┌────────────────────────┐                        │
-│   │ Surface Syntax: STATIC │   ===>  │  Semantics: MUTATED    │                        │
-│   └────────────────────────┘         └────────────────────────┘                        │
-│   Probes: Does the model blindly regurgitate old code when requirements changed?       │
-│                                                                                        │
-│   Reduction Ladder (Our Approach - 2026):                                              │
-│   ┌────────────────────────┐         ┌────────────────────────┐                        │
-│   │ Semantics: INVARIANT   │   ===>  │  Surface Syntax: MUTATED│                       │
-│   └────────────────────────┘         └────────────────────────┘                        │
-│   Probes: Does the model fail to apply valid logic simply because framing shifted?     │
-│                                                                                        │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+  ┌─────────────────────────────────────────────────────────────────────────────────┐
+  │                    THE REDUCTION LADDER (764 Total Tasks)                       │
+  ├─────┬──────────────────────────┬───────────────────────────────┬────────────────┤
+  │ L0  │ HumanEval Standard       │ openai/openai_humaneval        │  164 tasks     │
+  │ L1  │ EvoEval Subtle           │ evoeval/EvoEval_subtle         │  100 tasks     │
+  │ L2  │ EvoEval ToolUse          │ evoeval/EvoEval_tool_use       │  100 tasks     │
+  │ L3  │ EvoEval Creative         │ evoeval/EvoEval_creative       │  100 tasks     │
+  │ L4  │ EvoEval Difficult        │ evoeval/EvoEval_difficult      │  100 tasks     │
+  │ L5  │ EvoEval Combine          │ evoeval/EvoEval_combine        │  100 tasks     │
+  │Ctrl │ LiveCodeBench Lite       │ livecodebench/code_gen_lite    │  100 tasks     │
+  └─────┴──────────────────────────┴───────────────────────────────┴────────────────┘
+```
+
+### Concrete Transformation: *Two Sum* across L0→L5
+
+<details>
+<summary><b>Click to expand — full ladder walkthrough</b></summary>
+
+**L0 — Verbatim Classic:**
+```python
+def two_sum(nums: list[int], target: int) -> list[int]:
+    """Return indices of the two numbers that add up to target."""
+```
+
+**L1 — Format / Specification Shift:**
+```python
+def parse_and_find_indices(data_str: str, target: int) -> tuple[int, int]:
+    """Input is '2,7,11,15'. Parse and return 0-indexed tuple of matching pair."""
+```
+
+**L2 — Structural ToolUse Abstraction:**
+```python
+def find_pair_with_tool(seq: list[int], target: int, lookup_helper) -> list[int]:
+    """Use pre-defined lookup_helper(table, key) to manage complement queries."""
+```
+
+**L3 — Creative Narrative (Telecom Context):**
+```python
+def match_orange_transceivers(bandwidth_units: list[int], gateway_cap: int) -> list[int]:
+    """In an Orange 5G pool, find two transceivers whose bandwidth sums to gateway_cap."""
+```
+
+**L4 — Constraint Augmentation:**
+```python
+def match_transceivers_multi_zone(bandwidths: list[int], zones: list[str], cap: int) -> list[int]:
+    """Same as L3, but the two transceivers must be in DIFFERENT availability zones."""
+```
+
+**L5 — Cross-Concept Composition:**
+```python
+def schedule_optimal_dual_tasks(tasks: list[dict], total_limit: int) -> list[int]:
+    """Find two concurrent tasks summing to total_limit while MINIMIZING scheduling fragmentation."""
+```
+
+</details>
+
+### Our Approach vs. Code-Rewriting (MRI)
+
+```
+  Code-Rewriting (MRI / Yang et al., 2025):
+      Surface Syntax: STATIC  ──►  Semantics: MUTATED
+      Question: Does the model regurgitate old code when requirements change?
+
+  Reduction Ladder (This Work, 2026):
+      Semantics: INVARIANT    ──►  Surface Syntax: MUTATED
+      Question: Does the model fail to apply valid logic when framing shifts?
 ```
 
 ---
 
-## 4. Comprehensive Literature Taxonomy & Theoretical Foundations
-
-Our theoretical architecture synthesizes five complementary bodies of peer-reviewed literature across AI reasoning, code generation, and reinforcement learning.
+## 4. 7-Model Experimental Suite (M1–M7)
 
 ```
-                                [ REASONING & MITIGATION TAXONOMY ]
-                                                 │
-        ┌────────────────────────┬───────────────┴────────────────┬────────────────────────┐
-        ▼                        ▼                                ▼                        ▼
- [Foundational Limits]   [Code Benchmarks]               [Diagnostic Dimensions]  [Mitigation Arms]
-  • OOD Visual Planning   • EvoEval (EMNLP'24)            • OckBench (Token Dens.) • Inv-GRPO (Ours)
-  • RLVR Capacity Limits  • Code-Rewriting / MRI (2025)   • Thinking Longer        • Contrastive-SFT
-  • The Depth Ceiling     • LiveCodeBench (ICLR'24)       • Attribution Graphs     • AST-RL (TreeDiff)
-  • Trapped in Past       • LeetCodeDataset (2025)        • Flip-Flop Consistency  • Step-RLVR (CodePRM)
-  • Too Big to Think      • DynaCode / CRUXEval           • Error Taxonomy         • Info-Bottleneck
-  • Beyond Memorization   • GSM-Symbolic (ICLR'25)
+┌────┬─────────────────────────────┬───────────────────────────────┬──────────────────────────┬───────────────────────┐
+│ ID │ Model Name                  │ Checkpoint                    │ Training Paradigm        │ Expected ℓ* Collapse  │
+├────┼─────────────────────────────┼───────────────────────────────┼──────────────────────────┼───────────────────────┤
+│ M1 │ Zero-Shot Baseline          │ (none — base model)           │ Qwen2.5-Coder-1.5B-Inst. │ ≈ L2 (ToolUse)        │
+│ M2 │ Vanilla QLoRA SFT           │ qlora_vanilla_adapter         │ Standard CoT SFT         │ ≈ L2–L3               │
+│ M3 │ Contrastive DPO             │ qlora_contrastive_adapter     │ SFT + DPO Hard Negatives │ ≈ L3                  │
+│ M4 │ Standard GRPO               │ standard_grpo_final           │ Outcome-Only RLVR        │ ≈ L3 (Creative)       │
+│ M5 │ AST-RL                      │ rlvr_ast_final                │ GRPO + simAST Reward     │ ≈ L4 (Difficult)      │
+│ M6 │ Invariant GRPO ⭐ Primary   │ inv_grpo_final                │ Paired Invariance RLVR   │ ≈ L4–L5               │
+│ M7 │ Step-RLVR                   │ step_rlvr_final               │ Process Reward RLVR      │ ≈ L5 (best on L4/L5)  │
+└────┴─────────────────────────────┴───────────────────────────────┴──────────────────────────┴───────────────────────┘
 ```
 
-### The Foundational Six Papers: Limits of Reasoning
+**Shared Training Config** (all arms, for cross-rung comparability):
 
-1. **P1 — OOD Generalization of Reasoning in Multimodal LLMs for Visual Planning (arXiv:2602.15460):** Proved that Chain-of-Thought provides large boosts in-distribution but suffers catastrophic collapse under subtle out-of-distribution shifts, showing models mimic the *contour* of reasoning rather than executing invariant logic.
-2. **P2 — Does Reinforcement Learning Really Incentivize Reasoning Capacity Beyond the Base Model? (arXiv:2504.13837):** Formalized the Pass@1 vs. Pass@$k$ exploration methodology; demonstrated that RLVR primarily elevates sampling efficiency for solutions reachable in the base distribution, whereas distillation is the primary mechanism introducing novel capabilities.
-3. **P3 — The Depth Ceiling: Limits of LLMs in Discovering Latent Planning (arXiv:2604.06427):** Identified a structural ceiling in latent planning depth (3–7 steps without CoT), demonstrating that explicit CoT raises this ceiling to $\sim$20 steps. Introduced the foundational **on-path vs. off-path** error dichotomy.
-4. **P4 — Trapped in the Past? Fluid vs. Crystallized Intelligence via Chess (arXiv:2601.16823):** Built a difficulty taxonomy based on distance from training distribution without needing access to pre-training corpora.
-5. **P5 — Too Big to Think: Capacity, Memorization, and Generalization (arXiv:2506.09099):** Proved mathematically and empirically that lower-capacity models (SLMs) possess an inductive bias toward memorizing shortcut templates due to parameter compression bottlenecks.
-6. **P6 — Beyond Memorization: Reductive vs. Epistemic Reasoning via Logic Puzzles (arXiv:2603.21350):** Established *reductive reasoning* (reducing novel problems to stored templates) as the primary failure mode of LLMs, inspiring our Reduction Ladder.
-
-### Code-Domain Memorization & Contamination Literature
-
-* **EvoEval (EMNLP 2024):** Created 5 semantic perturbation dimensions; documented an average 38–40% accuracy degradation across 57 state-of-the-art models.
-* **Memorize or Generalize? (2025):** Introduced code-rewriting and the Memorization Risk Index (MRI).
-* **LLM Performance for Code Generation on Noisy Tasks (2025):** Discovered "eager pattern matching" where models output classic templates upon seeing familiar keyword tokens.
-* **LiveCodeBench (ICLR 2024):** Created continuous post-cutoff temporal problem harvesting.
-* **GSM-Symbolic (ICLR 2025):** Proved that non-functional prompt variations trigger severe performance collapse in mathematical reasoning models.
-
-### Multi-Dimensional Evaluation Dimensions Beyond Correctness
-
-* **OckBench — Per-Token Intelligence (2025):** Formalized compute density and reasoning efficiency ratios.
-* **Thinking Longer, Not Always Smarter (2025):** Quantified the "Overthinking Tax" (models generate up to 45% more tokens on failed attempts).
-* **Flip-Flop Consistency (2025):** Measured significant accuracy swings under neutral variable renames.
-
-### State-of-the-Art Mitigation Paradigms (2024–2026)
-
-| Paradigm | Exemplary Literature | Primary Strength | Critical Bottleneck / Limitation |
-|---|---|---|---|
-| **Process Rewards (PRMs)** | CodePRM (ACL'25), ExecVerify (ICSE'26) | Dense stepwise feedback prevents reward hacking. | High annotation compute; expensive verifiers. |
-| **AST Invariance** | TreeDiff (ASE'25), VeriSeek (ICSE'25) | Guarantees syntax and AST consistency. | Restricted to syntax; misses narrative shifts. |
-| **Self-Correction** | SuperCorrect (NeurIPS'24) | Dynamic runtime error recovery. | High inference latency overhead. |
-| **Information Bottleneck** | IB-FT (EMNLP'24), IBRO (2025) | Theoretical bounds on representation memorization.| Training instability on constrained SLMs. |
-| **Inv-GRPO (Ours)** | **This Work (2026)** | **Zero inference latency overhead; directly regularizes invariant reasoning.** | **Requires paired cross-perturbation training batches.** |
+```yaml
+base_model:   Qwen/Qwen2.5-Coder-1.5B-Instruct
+quantization: 4-bit NF4  (bnb_4bit_use_double_quant: true)
+lora_r:       16
+lora_alpha:   32
+lora_dropout: 0.05
+target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+learning_rate: 1e-5
+optimizer:    AdamW  (weight_decay=0.01, grad_clip=1.0)
+group_size_G: 4
+grad_accum:   2
+train_steps:  500
+max_new_tokens: 256
+temperature:  0.8
+sandbox_timeout: 3.0s
+```
 
 ---
 
-## 5. Model Selection Rationale & Capacity Axis
+## 5. Multi-Arm Mitigation Architecture
 
-### Why Qwen2.5-Coder-1.5B-Instruct?
+```
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                       MULTI-ARM MITIGATION FRAMEWORK                               │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                    │
+│  ARM 1a ── Inv-GRPO (PRIMARY) ─────────────────────────────────────────────────   │
+│    Paired rollouts on (x ∈ L0, x' ∈ L2): rewards cross-prompt invariance.         │
+│    + IRM penalty forces environment-invariant features (algo > surface).           │
+│                                                                                    │
+│  ARM 1b ── Standard GRPO (ABLATION ANCHOR) ────────────────────────────────────   │
+│    Binary execution RLVR without invariance; isolates ΔAUCᵢₙᵥ contribution.       │
+│                                                                                    │
+│  ARM 2 ─── Contrastive DPO ────────────────────────────────────────────────────   │
+│    Hard negatives: off-by-one, branch inversion, variable permutation.             │
+│    DPO loss: prefers structural correctness over lexical plausibility.             │
+│                                                                                    │
+│  ARM 3 ─── AST-RL (TreeDiff + VeriSeek) ───────────────────────────────────────   │
+│    Composite reward = exec_pass + β·simAST (normalized AST Jaccard + length).     │
+│    Dense signal on near-correct code that fails execution due to trivial errors.  │
+│                                                                                    │
+│  ARM 4 ─── Step-RLVR (CodePRM + ExecVerify) ───────────────────────────────────   │
+│    Decomposes tests into per-assertion contracts → continuous R ∈ [0,1].          │
+│    Solves reward sparsity on L4/L5 (binary RLVR ≈ 0 gradient there).             │
+│                                                                                    │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-1. **State-of-the-Art in Sub-2B Code Class:** Holds the highest Pass@1 on HumanEval, MBPP, and MultiPL-E among all open-source models under 2B parameters, ensuring we probe a formidable baseline.
-2. **The Canonical Distillation Target:** The DeepSeek-R1 project selected Qwen-1.5B as its primary distillation reference (`DeepSeek-R1-Distill-Qwen-1.5B`), establishing it as the global de-facto benchmark for small-model reasoning research.
-3. **Ideal Capacity Bottleneck Laboratory:** Operating under parameter constraints, 1.5B models cannot brute-force memorization of millions of surface variants, making shortcut collapse cleanly observable and measurable.
-4. **Edge Deployment Feasibility:** Consumes $\approx$ 1.1 GB VRAM at 4-bit NF4 precision, running efficiently on a single NVIDIA RTX 3070 (8GB) edge node.
+### Arm 1a — Invariant GRPO (M6)
 
-### Survey of Models in Reference Literature
+**Papers:** [IRM (arXiv:1907.02893)](https://arxiv.org/abs/1907.02893) · [DeepSeek-R1 / GRPO (arXiv:2501.12948)](https://arxiv.org/abs/2501.12948)
 
-| Paper / Initiative | Models Evaluated | Alignment with This Repository |
+$$\mathcal{L}_{\text{InvGRPO}} = \mathcal{L}_{\text{GRPO}} + \lambda_{\text{inv}} \cdot \left(\left\|\nabla_{\bar{w}} \mathcal{L}^{e_1}\right\|^2 + \left\|\nabla_{\bar{w}} \mathcal{L}^{e_2}\right\|^2\right), \quad \lambda_{\text{inv}} = 0.1$$
+
+### Arm 1b — Standard GRPO (M4)
+
+**Paper:** [DeepSeek-R1 (arXiv:2501.12948)](https://arxiv.org/abs/2501.12948)
+
+$$\mathcal{L}_{\text{GRPO}} = -\frac{1}{G}\sum_{g=1}^G \hat{A}_g \cdot \log\pi_\theta(y^{(g)} \mid x), \quad \hat{A}_g = \frac{R_g - \bar{R}}{\sigma_R + \varepsilon}$$
+
+### Arm 2 — Contrastive DPO (M3)
+
+**Papers:** [DPO (arXiv:2305.18290)](https://arxiv.org/abs/2305.18290) · [Contrastive Decoding (arXiv:2210.15097)](https://arxiv.org/abs/2210.15097) · [SPIN (arXiv:2401.01335)](https://arxiv.org/abs/2401.01335)
+
+$$\mathcal{L}_{\text{DPO}}(\theta) = -\mathbb{E}\!\left[\log\sigma\!\left(\beta\log\frac{\pi_\theta(y^+|x)}{\pi_{\text{ref}}(y^+|x)} - \beta\log\frac{\pi_\theta(y^-|x)}{\pi_{\text{ref}}(y^-|x)}\right)\right], \quad \beta = 0.1$$
+
+### Arm 3 — AST-RL (M5)
+
+**Papers:** [TreeDiff (ASE 2025)](https://dl.acm.org/doi/proceedings/10.1145/3691620) · [VeriSeek (ICSE 2025)](https://conf.researchr.org/home/icse-2025)
+
+$$\mathcal{R}_{\text{total}} = R_{\text{exec}} + \beta\cdot\text{simAST}(y, y^*), \quad \beta = 0.3$$
+$$\text{simAST}(y,y^*) = 0.6\cdot J(\sigma(y), \sigma(y^*)) + 0.4\cdot\frac{\min(|\sigma|,|\sigma^*|)}{\max(|\sigma|,|\sigma^*|)}$$
+
+### Arm 4 — Step-RLVR (M7)
+
+**Papers:** [CodePRM (ACL 2025)](https://aclanthology.org/) · [ExecVerify (ICSE 2026)](https://conf.researchr.org/home/icse-2026) · [Let's Verify Step by Step (arXiv:2305.20050)](https://arxiv.org/abs/2305.20050)
+
+$$R_{\text{stepwise}}(y) = \sum_{k=1}^{S} \frac{1}{S}\cdot s_k, \quad s_k\in\{0,1\}, \quad R\in[0,1]$$
+
+> **Why it matters:** A completion passing 8/10 assertions gets `R = 0.80` vs. `R = 0.0` with binary RLVR — **16× more gradient signal** on complex L4/L5 tasks.
+
+---
+
+## 6. Evaluation Metrics & Diagnostics
+
+### Primary Metrics
+
+| Metric | Formula | Purpose |
 |---|---|---|
-| **DeepSeek-R1 (2025)** | Qwen (1.5B, 7B, 14B, 32B), Llama (8B, 70B) | Qwen-1.5B established as canonical distillation target; our primary model. |
-| **EvoEval (EMNLP 2024)** | DeepSeek-Coder (1.3B–33B), CodeLlama (7B–34B), StarCoder2 (3B–15B), GPT-4 | Evaluated 57 models; our L1–L5 ladder directly builds upon their datasets. |
-| **Memorize or Generalize? (2025)** | Qwen2.5-Coder (1.5B, 7B), DeepSeek-V2-Lite, Llama-3-8B | Used Qwen2.5-Coder-1.5B for MRI; our MRI metrics directly compare. |
-| **SuperCorrect (NeurIPS 2024)** | Qwen2.5-Coder (1.5B, 7B), DeepSeek-Coder (1.3B, 6.7B) | Applied contrastive SFT on Qwen-1.5B; our Arm 2 builds on their loss formulation. |
-| **TreeDiff / VeriSeek (2025)** | Qwen2.5-Coder (1.5B, 7B), DeepSeek-Coder-1.3B | AST-guided policy rewards on sub-2B models; reproduced in our Arm 3. |
-| **CodePRM / ExecVerify (2025/2026)**| Qwen2.5-Coder-7B, DeepSeek-Coder-6.7B, Llama-3-8B | Process rewards for code; adapted into our Arm 4 stepwise verifier. |
-| **OckBench (2025)** | Qwen2.5 (1.5B, 7B, 72B), Llama-3 (8B, 70B), GPT-4o | Formalized per-token intelligence; our token efficiency suite matches their formulation. |
-| **LiveCodeBench (2024)** | 50+ models including Qwen2.5-Coder family, DeepSeek, GPT-4o | Temporal contamination control set with published Qwen baselines. |
+| **Pass@1** | $\frac{1}{\|D\|}\sum_i \mathbb{I}(\text{tests pass})$ | Functional correctness per rung |
+| **Ladder AUC** ($\mathcal{A}$) | $\frac{1}{6}\sum_{\ell=0}^5 \text{Pass@1}(\ell)$ | Overall anti-mimicry score |
+| **Collapse Point** ($\ell^*$) | $\min\{\ell : \text{Pass@1}(\ell) < 0.5\}$ | Generalization boundary |
+| **Degradation Slope** | Linear slope of Pass@1 over L0→L5 | Rate of capability decay |
+| **Mitigation Delta** ($\Delta_{\text{mit}}$) | $\text{Pass@1}_{M_k}(\ell) - \text{Pass@1}_{M_1}(\ell)$ | Gain over zero-shot baseline |
 
-### Three-Tier Capacity Axis
+### Error Taxonomy (per failing sample)
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                               MODEL CAPACITY AXIS                                      │
-├───────────────────────┬───────────────────────┬────────────────────────────────────────┤
-│ Tier 1: Edge SLM      │ Qwen2.5-Coder-1.5B    │ Primary target. M1–M6 variants tested. │
-│                       │ (1.5 Billion Params)  │ Severe capacity bottleneck.            │
-├───────────────────────┼───────────────────────┼────────────────────────────────────────┤
-│ Tier 2: Mid-Range     │ Qwen2.5-Coder-7B      │ Untreated capacity control.            │
-│                       │ (7.0 Billion Params)  │ Measures scaling impact on collapse.   │
-├───────────────────────┼───────────────────────┼────────────────────────────────────────┤
-│ Tier 3: Frontier LLM  │ Frontier Coding API   │ Empirical reasoning ceiling & upper-   │
-│                       │ (>100 Billion Params) │ bound benchmark anchor.                │
-└───────────────────────┴───────────────────────┴────────────────────────────────────────┘
+FAILURE TYPE               SIGNATURE                               LABEL
+─────────────────────────────────────────────────────────────────────────
+On-Path  (E_on)     Correct algorithm, minor boundary error    → Fixable
+Off-Path (E_off)    Lost algorithmic structure, hallucinated   → Structural fail
+Template (E_tmpl)   Verbatim L0 solution dumped on L3+ prompt  → Mimicry proof
 ```
+
+### Token Efficiency
+
+$$\text{Density}(\ell) = \frac{\text{Pass@1}(\ell)}{\bar{\tau}_{\text{reasoning}}(\ell)}\times 100, \qquad \text{Overthinking Tax} = \frac{\bar{\tau}_{\text{fail}} - \bar{\tau}_{\text{pass}}}{\bar{\tau}_{\text{pass}}}\times 100$$
+
+### Memorization Risk Index (MRI)
+
+$$\text{MRI} = \text{Sim}(y, y_{\text{template}}) \times \max\!\left(0,\, \text{Pass@1}(L_0) - \text{Pass@1}(L_3)\right)$$
 
 ---
 
-## 6. Cross-Paper Comparison Methodology
+## 7. Literature Foundations
 
-### Five-Axis Comparison Framework
+### Foundational Papers (Limits of Reasoning)
 
-| Axis | Metric Name | What It Measures | Benchmark Comparisons |
-|:---:|---|---|---|
-| **A1** | **Pass@1 (L0–L5)** | Deterministic accuracy per ladder level | EvoEval reported scores, MRI paper baselines, LiveCodeBench leaderboard |
-| **A2** | **Collapse Point ($\ell^*$)** | First level where accuracy drops below 50% | EvoEval degradation profiles (median $\ell^* \approx$ L2 for sub-3B models) |
-| **A3** | **Error Taxonomy (%)** | Distribution of on-path / off-path / wrong-template | Depth Ceiling error categories, Noisy Code Tasks eager-matching rates |
-| **A4** | **Token Efficiency ($\tau$)** | Tokens per correct solution (Per-Token Intelligence)| OckBench density ratios, Thinking Longer overthinking tax rates |
-| **A5** | **MRI Score** | Memorization Risk Index quantifying template mimicry| Memorize-or-Generalize reported MRI values |
+| # | Paper | Venue | Key Finding |
+|:---:|---|:---:|---|
+| P1 | [OOD Generalization of Reasoning in Multimodal LLMs](https://arxiv.org/abs/2602.15460) | arXiv'26 | CoT collapses catastrophically under subtle OOD shifts |
+| P2 | [Does RLVR Really Incentivize Reasoning?](https://arxiv.org/abs/2504.13837) | arXiv'25 | RLVR improves sampling efficiency, not new capabilities |
+| P3 | [The Depth Ceiling: Limits of LLMs in Latent Planning](https://arxiv.org/abs/2604.06427) | arXiv'26 | On-path vs. off-path error dichotomy; 3–7 step ceiling |
+| P4 | [Trapped in the Past — Chess Fluid vs. Crystallized Intelligence](https://arxiv.org/abs/2601.16823) | arXiv'26 | Distribution-distance difficulty taxonomy without pretraining access |
+| P5 | [Too Big to Think: Memorization & Generalization](https://arxiv.org/abs/2506.09099) | arXiv'25 | SLMs have parameter-compression bias toward shortcut templates |
+| P6 | [Beyond Memorization: Reductive vs. Epistemic Reasoning](https://arxiv.org/abs/2603.21350) | arXiv'26 | Reductive reasoning (novel → stored template) as primary LLM failure mode |
 
-### Direct Reproduction & Extension of EvoEval Baselines
+### Code Benchmarks & Contamination
 
-1. **Baseline Reproduction:** Reproduce published EvoEval Pass@1 for `Qwen2.5-Coder-1.5B` and `7B` across Subtle, ToolUse, Creative, Difficult, and Combine splits.
-2. **Mitigation Delta ($\Delta_{\text{mit}}$):**
-   $$\Delta_{\text{mit}}(\ell) = \text{Pass@1}_{\text{M}_k}(\ell) - \text{Pass@1}_{\text{M}_1}(\ell)$$
-3. **Collapse Point Shift ($\Delta\ell^*$):**
-   $$\Delta\ell^* = \ell^*_{\text{M}_k} - \ell^*_{\text{M}_1} \quad (\text{Target: } \Delta\ell^* \ge 2)$$
+| Paper | Key Contribution |
+|---|---|
+| **EvoEval (EMNLP 2024)** | 5 semantic perturbation dimensions; 38–40% avg drop across 57 SOTA models |
+| **LiveCodeBench (ICLR 2024)** | Continuous post-cutoff temporal harvesting; contamination firewall |
+| **Memorize or Generalize? (2025)** | Memorization Risk Index (MRI); code-rewriting test |
+| **GSM-Symbolic (ICLR 2025)** | Non-functional prompt changes trigger severe collapse in math reasoning |
 
-### Cross-Paper Benchmark Alignment Matrix
+### Mitigation Paradigms
 
-| Reference Paper | Reported Metric | Repository Equivalent Output | Comparison Protocol |
+| Paradigm | Literature | Strength | Bottleneck |
 |---|---|---|---|
-| **EvoEval (2024)** | Pass@1 per perturbation | Pass@1 per ladder level (L1–L5) | Direct split-by-split absolute accuracy delta ($\Delta_{\text{mit}}$). |
-| **MRI Paper (2025)** | Memorization Risk Index | $\text{MRI} = \text{Sim} \times \max(0, \Delta\text{Pass@1})$ | Compute on identical L0$\to$L3 pairs; compare MRI reduction. |
-| **Depth Ceiling (2026)** | On-path / Off-path ratio | On-path / Off-path / Wrong-Template % | Extend binary taxonomy with 3rd "Wrong-Template" class. |
-| **OckBench (2025)** | Per-Token Intelligence | $\text{Accuracy} / \bar{\tau}_{\text{reasoning}} \times 100$ | Compare density curves across parameter tiers. |
-| **Thinking Longer (2025)**| Overthinking Tax (%) | $(\bar{\tau}_{\text{fail}} - \bar{\tau}_{\text{pass}}) / \bar{\tau}_{\text{pass}} \times 100$ | Compare against their reported 45% failure overhead. |
-| **LiveCodeBench (2024)** | Post-cutoff Pass@1 | Pass@1 on `code_generation_lite` | Zero-contamination baseline validation. |
-| **GSM-Symbolic (2025)** | Symbolic perturbation drop | Consistency Delta ($\Delta_c$) | Code-domain analogue of non-functional prompt variation. |
-| **Flip-Flop (2025)** | Variable renaming swing | $\Delta_c$ between L1 and L2 | Evaluate sensitivity magnitude under lexical shifts. |
+| **Process Rewards** | CodePRM (ACL'25), ExecVerify (ICSE'26) | Dense stepwise feedback | High compute; verifier cost |
+| **AST Invariance** | TreeDiff (ASE'25), VeriSeek (ICSE'25) | Syntax-level correctness | Misses narrative shifts |
+| **Contrastive Preference** | DPO + SPIN | Offline hard-negative learning | No online execution signal |
+| **Inv-GRPO (Ours)** | **This Work (2026)** | **Zero inference overhead; cross-view invariance** | Paired batch requirement |
 
 ---
 
-## 7. Prioritized Multi-Arm Mitigation Framework (P1–P4)
+## 8. Codebase Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                         MULTI-ARM MITIGATION ARCHITECTURE                              │
-├────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                        │
-│  [P1: Inv-GRPO (Primary)] ──► Paired Rollouts (x, x') + Consistency Reward             │
-│                                                                                        │
-│  [P2: Contrastive-SFT]    ──► CoT Traces paired with Negative Shortcut Rejection       │
-│                                                                                        │
-│  [P3: AST-RL (Structural)]──► Policy Optimization guided by Tree-Edit Distance simAST  │
-│                                                                                        │
-│  [P4: Step-RLVR (Process)]──► Stepwise Contract Verification on Sub-Functions          │
-│                                                                                        │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+diagnosing-resolving-code-slm-mimicry/
+│
+├── src/
+│   ├── core/                        # Domain Entities & Protocols
+│   │   ├── config.py                # Pydantic settings (QLoRA, model, storage)
+│   │   ├── entities.py              # BenchmarkTask, ExecutionResult, LevelReport
+│   │   └── protocols.py            # ICodeExecutor, IBenchmarkLoader, IModelRunner
+│   │
+│   ├── infrastructure/              # Adapters & I/O
+│   │   ├── sandbox.py              # SubprocessSandbox (isolated, UTF-8, timeout)
+│   │   ├── model_runner.py         # QuantizedModelRunner (4-bit NF4)
+│   │   ├── benchmark_loader.py     # HuggingFace JSONL loader & cache
+│   │   └── code_utils.py           # Code extraction & formatting
+│   │
+│   ├── evaluation/                  # Evaluation Engine
+│   │   ├── suite.py                # EvaluationSuite — 7-rung harness
+│   │   ├── registry.py             # BenchmarkRegistry — task pool management
+│   │   ├── metrics.py              # Pass@k, AUC, Collapse Point, MRI, Slope
+│   │   └── reporter.py             # EvaluationReporter — figures, LaTeX, CSV
+│   │
+│   └── arms/                        # Training Arms (Anti-Mimicry Methods)
+│       ├── arm1_inv_grpo/           # Arm 1a: Invariant GRPO (M6)
+│       │   └── trainer.py          # InvGRPOTrainer — IRM + GRPO
+│       ├── arm2_contrastive_dpo/    # Arm 2: Contrastive DPO (M3)
+│       │   └── trainer.py          # ContrastiveDPOTrainer
+│       ├── arm3_ast_rl/             # Arm 3: AST-RL (M5)
+│       │   ├── trainer.py          # ASTRLTrainer — simAST reward
+│       │   └── ast_reward.py       # ASTNormalizer + simAST metric
+│       ├── arm4_step_rlvr/          # Arm 4: Step-RLVR (M7)
+│       │   ├── trainer.py          # StepRLVRTrainer — per-assertion reward
+│       │   └── verifier.py         # StepwiseContractVerifier
+│       └── standard_grpo/           # Arm 1b: Standard GRPO (M4)
+│           └── trainer.py          # StandardGRPOTrainer — ablation anchor
+│
+├── notebooks/
+│   ├── nb_01_data_pipeline.ipynb    # Stage 1: Download & verify 764 tasks
+│   ├── nb_02_baseline_eval.ipynb    # Stage 2: M1 zero-shot baseline evaluation
+│   ├── nb_03_distillation.ipynb     # Stage 3: SFT trace curation (Arm 2)
+│   ├── nb_04_qlora_training.ipynb   # Stage 4: QLoRA fine-tuning
+│   ├── nb_05_post_training_eval.ipynb # Stage 5: M1 vs M2 vs M3 comparison
+│   ├── nb_06_evaluation_suite.ipynb # ★ Unified 7-model evaluation harness
+│   ├── arm_01_inv_grpo.ipynb        # Arm 1a: Inv-GRPO training (M6)
+│   ├── arm_01b_standard_grpo.ipynb  # Arm 1b: Standard GRPO (M4)
+│   ├── arm_02_contrastive_sft.ipynb # Arm 2: Contrastive DPO (M3)
+│   ├── arm_03_ast_rl.ipynb          # Arm 3: AST-RL (M5)
+│   └── arm_04_step_rlvr.ipynb       # Arm 4: Step-RLVR (M7)
+│
+├── scripts/
+│   ├── train_arm4.py               # Standalone Step-RLVR trainer (GPU)
+│   └── prepare_kaggle_upload.py    # Packages checkpoints + benchmarks for Kaggle
+│
+├── checkpoints/                     # Trained LoRA Adapters
+│   ├── qlora_vanilla_adapter/       # M2 — Vanilla SFT
+│   ├── qlora_contrastive_adapter/   # M3 — Contrastive DPO
+│   ├── standard_grpo_final/         # M4 — Standard GRPO
+│   ├── rlvr_ast_final/              # M5 — AST-RL
+│   ├── inv_grpo_final/              # M6 — Invariant GRPO ⭐
+│   └── step_rlvr_final/             # M7 — Step-RLVR
+│
+├── data/ladder/                     # 764-task benchmark JSONL cache
+├── results/                         # Evaluation outputs, figures, CSV tables
+├── config.yaml                      # Central configuration (QLoRA, paths, HW)
+└── kaggle_upload/                   # Packaged zips for Kaggle dataset upload
 ```
 
-### Arm 1 (P1 - Primary): Invariance-Regularized GRPO (Inv-GRPO)
-📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/arm1_inv_grpo/README.md)**
-
-During policy rollouts, Inv-GRPO feeds paired semantically equivalent prompts $(x, x')$ (e.g., $x \in L_0$ and $x' \in L_2$):
-
-$$\mathcal{R}_{\text{total}}(y_i, y'_i) = \mathcal{R}_{\text{exec}}(y_i) + \mathcal{R}_{\text{exec}}(y'_i) + \lambda \cdot \mathcal{R}_{\text{consistency}}(y_i, y'_i) - \gamma \cdot \mathcal{P}_{\text{template}}$$
-
-Where:
-* $\mathcal{R}_{\text{exec}}(y) \in \{0, 1\}$ is deterministic sandbox unit-test pass/fail.
-* $\mathcal{R}_{\text{consistency}}(y_i, y'_i) = \mathbb{I}(\mathcal{R}_{\text{exec}}(y_i) = 1 \land \mathcal{R}_{\text{exec}}(y'_i) = 1)$ explicitly rewards cross-perturbation invariance.
-* $\mathcal{P}_{\text{template}}$ penalizes verbatim classic boilerplate generation on perturbed prompts.
-* Micro-batched rollout architecture slashes peak VRAM from **12.3 GB to ~3.03 GB** on NVIDIA RTX 3070 Ti 8GB.
-
-### Arm 2 (P2 - SFT): Contrastive Thought-Template SFT & DPO
-📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/arm2_contrastive_dpo/README.md)**
-
-Inspired by SuperCorrect and ReCode, we curate reasoning trajectories pairing positive step-by-step traces $y^+$ with negative shortcut failure traces $y^-$ (the memorized HumanEval $L_0$ decoy):
-
-$$\mathcal{L}_{\text{DPO}}(\theta; \pi_{\text{ref}}) = -\mathbb{E}_{(x, y^+, y^-)} \left[ \log \sigma \left( \beta \log \frac{\pi_\theta(y^+ \mid x)}{\pi_{\text{ref}}(y^+ \mid x)} - \beta \log \frac{\pi_\theta(y^- \mid x)}{\pi_{\text{ref}}(y^- \mid x)} \right) \right]$$
-
-### Arm 3 (P3 - Syntax): AST-Guided Policy Optimization (AST-RL)
-📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/arm3_ast_rl/README.md)**
-
-Integrates a deterministic Python AST parser and normalizer into the RL reward loop to reward structural syntax alignment without lexical variable-naming bias:
-
-$$\mathcal{R}_{\text{total}}(y, y^*) = \mathcal{R}_{\text{exec}}(y) + \beta \cdot \text{simAST}(\text{AST}(y), \text{AST}(y^*))$$
-
-Where $\text{simAST}$ combines $60\%$ normalized node Jaccard similarity and $40\%$ node sequence length ratio (TreeDiff / VeriSeek).
-
-### Arm 4 (P4 - Process): Stepwise Execution-Gated RLVR (Step-RLVR)
-📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/arm4_step_rlvr/README.md)**
-
-Decomposes complex multi-goal algorithmic tasks ($L_4$ Difficult, $L_5$ Combine) into independent sub-function contracts, awarding dense, stepwise partial credits:
-
-$$\mathcal{R}_{\text{stepwise}}(y) = \sum_{s=1}^S w_s \cdot \mathbb{I}(\text{Contract}_s(y) == \text{Valid})$$
-
-### Baseline Ablation Anchor: Standard GRPO (Outcome-Only RLVR)
-📄 **[Exhaustive Technical Documentation & Literature Foundations (README)](src/arms/standard_grpo/README.md)**
-
-Implements standard DeepSeekMath GRPO without invariance regularizer or decoy penalties, isolating the exact empirical contribution of our Invariance Regularizer ($\Delta \text{AUC}_{\text{Inv}}$).
-
-### Intervention Paradigm Analysis: Distillation vs. RLVR vs. RLIR
-
-| Dimension | 1 — Distillation (SFT) | 2 — Outcome RLVR | 3 — Intrinsic RLIR | 4 — Inv-GRPO (Ours) |
-|---|---|---|---|---|
-| **Reward Source** | External teacher CoT traces | Binary unit-test sandbox ($0/1$) | Self-rewarding model loop | Paired execution + consistency |
-| **Introduces New Capability?**| **Yes** (seeds latent exploration paths) | **Mostly No** (improves sampling efficiency) | **No** (refines consistency) | **Yes** (enforces cross-view invariance) |
-| **Primary Failure Mode** | Mimics surface formatting without logic | Reward-hacking shortcut patterns | Collapse into degenerate consensus | Paired batch memory requirements |
-
-
----
-
-## 8. The Six-Model Comparative Experimental Suite (M1–M6)
+### Layer Separation Principle
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              SIX-MODEL EVALUATION MATRIX                               │
-├────┬────────────────────────────┬─────────────────────────────┬───────────────────────┤
-│ ID │ Model Checkpoint           │ Training Paradigm           │ Expected Collapse Pt. │
-├────┼────────────────────────────┼─────────────────────────────┼───────────────────────┤
-│ M1 │ Baseline (Untuned)         │ Qwen2.5-Coder-1.5B-Instruct │ ℓ* ≈ L2 (ToolUse)     │
-│ M2 │ Vanilla SFT                │ Standard CoT SFT (10K)      │ ℓ* ≈ L3 (Creative)    │
-│ M3 │ Contrastive-SFT (Arm 2)    │ SFT + Negative Rejection    │ ℓ* ≈ L3 → L4          │
-│ M4 │ Vanilla GRPO               │ Single-Prompt Outcome RLVR  │ ℓ* ≈ L3 (Creative)    │
-│ M5 │ AST-RL (Arm 3)             │ GRPO + simAST Reward        │ ℓ* ≈ L4 (Difficult)   │
-│ M6 │ Inv-GRPO (Arm 1 - Proposed)│ Paired Multi-View Invariance│ ℓ* ≈ L4 → L5 (Combine)│
-└────┴────────────────────────────┴─────────────────────────────┴───────────────────────┘
+Layer 4 [Presentation]    notebooks/nb_*.ipynb  ·  scripts/*.py
+         │ calls
+Layer 3 [Application]     EvaluationSuite  ·  EvaluationReporter  ·  Metrics
+         │ orchestrates
+Layer 2 [Domain Core]     BenchmarkTask  ·  ExecutionResult  ·  Protocols  (Zero ML imports)
+         │ implements
+Layer 1 [Infrastructure]  SubprocessSandbox  ·  QuantizedModelRunner  ·  BenchmarkLoader
 ```
 
 ---
 
-## 9. Mathematical Formulation of Multi-Dimensional Evaluation Metrics
+## 9. Installation & Quickstart
 
-### 1. Pass@1 (Greedy Functional Correctness)
-$$\text{Pass@1} = \frac{1}{|D|} \sum_{i=1}^{|D|} \mathbb{I}(\text{Sample}_1(x_i) \text{ passes all unit tests})$$
+### Requirements
 
-### 2. Unbiased Pass@$k$ (Sampling Coverage)
-$$\text{Pass@}k = \mathbb{E}_{x \sim D} \left[ 1 - \frac{\binom{n - c}{k}}{\binom{n}{k}} \right] \quad (n=20, k=5, T=0.8)$$
+- Python **3.10+**
+- CUDA **12.1+** (NVIDIA GPU with ≥ 8 GB VRAM)
+- Tested on: **Windows 11 / Ubuntu 22.04** · **RTX 3070 Ti 8 GB** / **Kaggle T4 16 GB**
 
-### 3. Collapse Point ($\ell^*$) & Ladder AUC ($\mathcal{A}$)
-$$\ell^* = \min \left\{ \ell \in \{0, 1, 2, 3, 4, 5\} \mid \text{Pass@1}(\ell) < 0.50 \right\}, \quad \mathcal{A} = \frac{1}{6} \sum_{\ell=0}^{5} \text{Pass@1}(\ell)$$
+### Option A — Conda (Recommended)
 
-### 4. Diagnostic Error Taxonomy Heuristics
-When a generated sample fails sandbox execution, it is categorized into:
-* **On-Path Failure ($\mathcal{E}_{\text{on}}$):** Algorithmic logic correct; execution failed due to minor boundary condition or off-by-one index.
-* **Off-Path Failure ($\mathcal{E}_{\text{off}}$):** Algorithmic structure lost; hallucinated control flow or invalid syntax.
-* **Wrong-Template Failure ($\mathcal{E}_{\text{template}}$):** Confidently generated a memorized solution to an unperturbed classic problem. *Direct empirical proof of pattern-matching collapse.*
-
-### 5. Token Efficiency & Compute Density
-$$\text{Density}(\ell) = \frac{\text{Pass@1}(\ell)}{\bar{\tau}_{\text{reasoning}}(\ell)} \times 100, \quad \text{Overthinking Tax} = \frac{\bar{\tau}_{\text{fail}} - \bar{\tau}_{\text{pass}}}{\bar{\tau}_{\text{pass}}} \times 100$$
-
-### 6. Consistency Delta ($\Delta_c$)
-$$\Delta_c = |\text{Pass@1}(L_1) - \text{Pass@1}(L_2)|$$
-
-### 7. Memorization Risk Index (MRI)
-$$\text{MRI} = \text{Similarity}(y, y_{\text{template}}) \times \max(0, \text{Pass@1}(L_0) - \text{Pass@1}(L_3))$$
-
----
-
-## 10. Clean Architecture Software Engineering Blueprint
-
-The codebase enforces strict **Clean Architecture (Separation of Concerns)** across 4 isolated layers:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    LAYER 4: PRESENTATION & ENTRY POINTS                     │
-│    • CLI Scripts: scripts/run_stage*.py   • Notebooks: notebooks/nb_*.ipynb │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │ calls
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    LAYER 3: APPLICATION SERVICES (Use Cases)                │
-│    • DataService               • EvaluationEngine (src/evaluation/)         │
-│    • Metrics Calculator        • Publication Plotting Engine                │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │ orchestrates
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    LAYER 2: DOMAIN CORE (Pure Python Protocols)             │
-│    • Entities: BenchmarkTask, ExecutionResult, LevelEvaluationReport        │
-│    • Protocols: ICodeExecutor, IBenchmarkLoader, IModelRunner               │
-│    • Exceptions: SandboxTimeoutError, ModelInferenceError (Zero ML Imports) │
-└──────────────────────────────────────▲──────────────────────────────────────┘
-                                       │ implements
-┌──────────────────────────────────────┴──────────────────────────────────────┐
-│                    LAYER 1: INFRASTRUCTURE (Adapters & IO)                  │
-│    • SubprocessSandbox (-X utf8, stdin streaming, timeout isolation)        │
-│    • QuantizedModelRunner (4-bit NF4 BitsAndBytes + HF Cache D:\hf_cache)  │
-│    • HuggingFaceBenchmarkLoader (JSONL disk persistence)                    │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 11. Exhaustive 12-Week (3-Month) Execution Roadmap
-
-```
-MONTH 1: DIAGNOSTIC FOUNDATION
-├── W1: Ingestion & Environment Setup (JSONL ladder caching, schema validation)
-├── W2: Subprocess Sandbox Hardening (100% ground-truth verification on L0-L5)
-├── W3: Baseline Inference (M1 Qwen-1.5B & 7B Pass@1/5 across all 664 tasks)
-└── W4: Collapse Diagnosis (Calculate baseline ℓ*, Ladder AUC, Error Taxonomy)
-
-MONTH 2: SFT & STRUCTURAL MITIGATION
-├── W5: SFT Data Curation (10K OpenCodeReasoning + negative shortcut rejection traces)
-├── W6: SFT Model Training (Arm 2A Vanilla M2 & Arm 2B Contrastive M3 via QLoRA)
-├── W7: SFT Ladder Probing (Compute MRI reduction & compare vs. SuperCorrect)
-└── W8: Standard RLVR Training (Arm 0 Vanilla GRPO M4 & Arm 3 AST-RL M5)
-
-MONTH 3: INVARIANCE OPTIMIZATION & SYNTHESIS
-├── W9: Inv-GRPO Training (Paired cross-perturbation sampling & consistency rewards)
-├── W10: Process RL & Hyperparameter Tuning (Step-RLVR & λ/γ regularizer tuning)
-├── W11: Full Suite Benchmarking (Cross-evaluate M1–M6 on Ladder + LiveCodeBench)
-└── W12: Synthesis & Delivery (Compile publication figures & report for Dr. Ghada)
-```
-
----
-
-## 12. Hardware Feasibility & Edge VRAM Budget (RTX 3070 8GB)
-
-Every experimental pipeline stage is empirically calibrated to run within an **8GB VRAM envelope**:
-
-| Pipeline Stage | Precision / Mode | VRAM Allocation | Hardware Optimization Techniques |
-|---|---|:---:|---|
-| **Inference / Ladder Eval** | 4-bit NF4 Quantization | $\approx$ **1.1 GB** | BitsAndBytes NF4, batch size 1, stream generation. |
-| **QLoRA / Contrastive SFT** | 4-bit Base + LoRA Float16 | $\approx$ **6.5 GB** | LoRA ($r=16, \alpha=32$), Gradient Accumulation = 4, `torch.cuda.empty_cache()`. |
-| **GRPO / AST-RL / Inv-GRPO** | 4-bit Policy + Ref Model | $\approx$ **7.2 GB** | Gradient checkpointing, group size $G=4$, interleaved rollout generation. |
-
----
-
-## 13. Installation, Setup & Quickstart Guide
-
-### 1. Clone & Environment Setup
-
-The repository is thoroughly tested and verified on **Python 3.10.20** with **CUDA 12.4** on Windows 10/11 (AMD64) and Linux.
-
-#### Option A: Conda (Recommended for team reproducibility)
 ```bash
-# Clone the repository
 git clone https://github.com/OmarAbdelhamidAly/diagnosing-resolving-code-slm-mimicry.git
 cd diagnosing-resolving-code-slm-mimicry
 
-# Create & activate conda environment
 conda env create -f environment.yml
 conda activate reo_env
 ```
 
-#### Option B: Standard Python venv (Python 3.10.x required)
+### Option B — pip + venv
+
 ```bash
-# Create & activate environment (Windows PowerShell)
+# Windows PowerShell
 python -m venv .venv
 .venv\Scripts\activate
 
-# Step 1: Install PyTorch 2.6.0 with CUDA 12.4
-pip install torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cu124
+# CUDA 12.4 PyTorch (adjust index URL for your CUDA version)
+pip install torch==2.6.0+cu124 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
-# Step 2: Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Configure Cache & Settings
-Ensure `config.yaml` points to your preferred storage drive (especially on Windows where `C:` disk space is constrained):
+### Configuration
+
+Edit `config.yaml` to set your HuggingFace cache directory (especially on Windows where C: space is limited):
+
 ```yaml
 storage:
-  hf_cache_dir: "D:/hf_cache"
+  hf_cache_dir: "D:/hf_cache"       # ← Point to large drive
   ladder_cache_dir: "data/ladder"
+
+models:
+  student_model: "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+  quantization: "4bit_nf4"
+
+qlora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
 ```
 
-### 3. Interactive Research Notebooks (Primary Workflow)
+### Quickstart: Run the Full Evaluation Suite
 
-All research stages, dataset curation, model training, evaluation runs, and publication visualizations are executed and showcased interactively via Jupyter Notebooks:
+```bash
+# 1. Download & cache all 764 benchmark tasks
+jupyter nbconvert --to notebook --execute notebooks/nb_01_data_pipeline.ipynb
 
-| Notebook | Stage / Arm | Description & Key Visuals |
-|---|---|---|
-| [`notebooks/nb_01_data_pipeline.ipynb`](notebooks/nb_01_data_pipeline.ipynb) | **Stage 1: Ingestion & Verification** | Downloads & caches L0–L5 benchmarks; runs multi-process ground-truth verification; inspects task schemas. |
-| [`notebooks/nb_02_baseline_eval.ipynb`](notebooks/nb_02_baseline_eval.ipynb) | **Stage 2: Baseline Probing** | Evaluates M1 (`Qwen2.5-Coder-1.5B-Instruct` 4-bit NF4); plots degradation curves and failure taxonomy breakdown. |
-| [`notebooks/nb_03_distillation.ipynb`](notebooks/nb_03_distillation.ipynb) | **Stage 3: SFT Data Construction** | Builds Vanilla CoT traces (Arm 2A) & synthetic Contrastive shortcut-rejection pairs (Arm 2B); token distribution stats. |
-| [`notebooks/nb_04_qlora_training.ipynb`](notebooks/nb_04_qlora_training.ipynb) | **Stage 4: QLoRA Fine-Tuning** | Trains 4-bit NF4 QLoRA adapters within 8GB VRAM envelope; monitors loss convergence and saves adapter weights. |
-| [`notebooks/nb_05_post_training_eval.ipynb`](notebooks/nb_05_post_training_eval.ipynb) | **Stage 5: Comparative Analysis** | Evaluates post-training checkpoints (M1 vs M2 vs M3); renders multi-model degradation curves, AUC, and delta tables. |
-| [`notebooks/nb_06_evaluation_suite.ipynb`](notebooks/nb_06_evaluation_suite.ipynb) | **Unified Evaluation Suite** | Single authoritative 7-rung benchmark harness ($L_0$–$L_5$ + LiveCodeBench $Ctrl$) with per-cell snapshot safeguards. |
-| [`notebooks/arm_01_inv_grpo.ipynb`](notebooks/arm_01_inv_grpo.ipynb) | **Arm 1: Inv-GRPO (Primary)** | Micro-batched Invariance-Regularized Policy Optimization ($3.03\text{ GB}$ VRAM); live advantage & rollout curves. |
-| [`notebooks/arm_01b_standard_grpo.ipynb`](notebooks/arm_01b_standard_grpo.ipynb) | **Arm 0: Standard GRPO** | Direct ablation anchor implementing DeepSeekMath GRPO on isolated prompts to quantify $\Delta \text{AUC}_{\text{Inv}}$. |
-| [`notebooks/arm_02_contrastive_sft.ipynb`](notebooks/arm_02_contrastive_sft.ipynb) | **Arm 2: Contrastive SFT / DPO** | Preference-guided unlearning of memorized HumanEval shortcuts on transformed problem distributions. |
-| [`notebooks/arm_03_ast_rl.ipynb`](notebooks/arm_03_ast_rl.ipynb) | **Arm 3: AST-RL** | Structure-guided policy optimization pairing sandbox execution with normalized Abstract Syntax Tree distances. |
-| [`notebooks/arm_04_step_rlvr.ipynb`](notebooks/arm_04_step_rlvr.ipynb) | **Arm 4: Step-RLVR** | Stepwise contract verifier awarding dense partial credits across intermediate sub-routine boundaries. |
+# 2. Run baseline evaluation (M1 — zero-shot)
+jupyter nbconvert --to notebook --execute notebooks/nb_02_baseline_eval.ipynb
+
+# 3. Train Arm 4 (Step-RLVR) — requires GPU
+python scripts/train_arm4.py
+
+# 4. Package everything for Kaggle evaluation
+python scripts/prepare_kaggle_upload.py
+# → kaggle_upload/slm_ladder_benchmarks.zip
+# → kaggle_upload/slm_checkpoints.zip
+```
 
 ---
 
-## 14. Research Authors, Supervision & Citation
+## 10. Notebooks & Workflow
 
-### Research Authors
-* **Omar Abdelhamid** — AI R&D Engineer, Orange Innovation Labs  
-  🎓 *Microsoft Certified: Azure AI Engineer Associate (Exam AI-103)*  
-  🔗 [Official Digital Credential Verification](https://learn.microsoft.com/api/credentials/share/en-gb/OmarAbdelhamid-8655/5628E1B02C79DA17?sharingId=C1C86A19180C72A2)
-* **Nour Walid** — AI R&D Engineer, Orange Innovation Labs
+| Notebook | Stage | Key Output |
+|---|---|---|
+| [`nb_01_data_pipeline.ipynb`](notebooks/nb_01_data_pipeline.ipynb) | Data Ingestion | 764 tasks cached as JSONL; integrity report |
+| [`nb_02_baseline_eval.ipynb`](notebooks/nb_02_baseline_eval.ipynb) | M1 Baseline | Degradation curve; collapse point ℓ*; error taxonomy |
+| [`nb_03_distillation.ipynb`](notebooks/nb_03_distillation.ipynb) | SFT Curation | CoT traces + contrastive hard-negative pairs |
+| [`nb_04_qlora_training.ipynb`](notebooks/nb_04_qlora_training.ipynb) | QLoRA Training | M2 vanilla SFT adapter (within 8 GB VRAM) |
+| [`nb_05_post_training_eval.ipynb`](notebooks/nb_05_post_training_eval.ipynb) | M1 vs M2 vs M3 | Multi-model degradation curves; delta tables |
+| [`nb_06_evaluation_suite.ipynb`](notebooks/nb_06_evaluation_suite.ipynb) ⭐ | **Unified Harness** | **Full 7-model × 7-rung evaluation; auto-CSV; figures; LaTeX** |
+| [`arm_01_inv_grpo.ipynb`](notebooks/arm_01_inv_grpo.ipynb) | Arm 1a — M6 | Inv-GRPO 500-step training; advantage curves; VRAM: ~3 GB |
+| [`arm_01b_standard_grpo.ipynb`](notebooks/arm_01b_standard_grpo.ipynb) | Arm 1b — M4 | Standard GRPO ablation anchor |
+| [`arm_02_contrastive_sft.ipynb`](notebooks/arm_02_contrastive_sft.ipynb) | Arm 2 — M3 | DPO training on hard-negative contrastive pairs |
+| [`arm_03_ast_rl.ipynb`](notebooks/arm_03_ast_rl.ipynb) | Arm 3 — M5 | AST-guided policy optimization; simAST reward curves |
+| [`arm_04_step_rlvr.ipynb`](notebooks/arm_04_step_rlvr.ipynb) | Arm 4 — M7 | Step-RLVR; per-assertion reward density visualization |
 
-### Research Supervision
-* **Dr. Ghada Khoriba (Soliman)** — Head of Software Engineering & AI Research, Orange Innovation Labs / Faculty of Engineering
+### Kaggle GPU Workflow (Recommended for Full Evaluation)
 
-### BibTeX Citation
+```
+Local machine:                           Kaggle:
+─────────────                            ──────────────────────────────────
+Train Arm 1–4           ──── upload ──►  slm-checkpoints dataset
+(checkpoints/*./)                        slm-ladder-benchmarks dataset
+                                                    │
+                                         nb_06_evaluation_suite.ipynb
+                                         GPU T4 × 1 · Internet ON
+                                                    │
+                         ◄── download ── evaluation_results.zip
+results/*.json                           (auto-packaged after each model cell)
+```
+
+---
+
+## 11. Hardware Budget
+
+Every stage is calibrated to fit within an **8 GB VRAM envelope** on an NVIDIA RTX 3070.
+
+| Stage | Precision | VRAM Peak | Optimizations |
+|---|---|:---:|---|
+| Inference / Ladder Eval | 4-bit NF4 | **~1.1 GB** | Batch size 1, stream generation |
+| QLoRA / Contrastive SFT | 4-bit Base + LoRA FP16 | **~6.5 GB** | LoRA r=16, gradient accum=2, `empty_cache()` |
+| GRPO / AST-RL / Inv-GRPO | 4-bit Policy + Ref | **~7.2 GB** | Gradient checkpointing, micro-batched rollouts, G=4 |
+| Step-RLVR | 4-bit NF4 | **~6.8 GB** | Per-assertion subprocess isolation |
+
+> **On Kaggle T4 (16 GB):** All arms run comfortably without micro-batching tricks.
+
+---
+
+## 12. Results & Key Findings
+
+> ⚠️ **This section will be updated after completing M7 (Step-RLVR) training and running the full `nb_06_evaluation_suite.ipynb`.**
+
+### Checkpoint Status
+
+| Model | Checkpoint | Training | Eval |
+|---|---|:---:|:---:|
+| M1 Baseline | *(none)* | ✅ | ✅ |
+| M2 Vanilla SFT | `qlora_vanilla_adapter` | ✅ | ✅ |
+| M3 Contrastive DPO | `qlora_contrastive_adapter` | ✅ | ⏳ |
+| M4 Standard GRPO | `standard_grpo_final` | ✅ | ⏳ |
+| M5 AST-RL | `rlvr_ast_final` | ✅ | ⏳ |
+| M6 Inv-GRPO | `inv_grpo_final` | ✅ | ⏳ |
+| M7 Step-RLVR | `step_rlvr_final` | 🔄 *In Progress* | ⏳ |
+
+### Preliminary Observations (M1 + M2)
+
+- **M1 Baseline** collapses at **L2** (ToolUse) — strong L0 memorization, brittle to structural shifts
+- **M2 Vanilla SFT** shows a *Mimicry Dip* — L0 drops ~8 pp while L2 gains only ~5 pp; net regression confirms the mimicry-without-reasoning hypothesis
+- Full 7-model comparison table will appear here after `nb_06` run completes
+
+---
+
+## 13. Citation
+
+### BibTeX
 
 ```bibtex
 @article{abdelhamid2026reductionladder,
-  title     = {Reduction Ladder for Code: Probing and Resolving Shortcut Learning vs. Transferable Reasoning in Code SLMs via Multi-Arm Invariance Mitigation},
+  title     = {Reduction Ladder for Code: Probing and Resolving Shortcut Learning
+               vs. Transferable Reasoning in Code SLMs via Multi-Arm Invariance Mitigation},
   author    = {Abdelhamid, Omar and Walid, Nour and Khoriba, Ghada},
   journal   = {Technical Research Report -- Orange Innovation Labs AI R\&D},
   year      = {2026},
@@ -609,5 +583,21 @@ All research stages, dataset curation, model training, evaluation runs, and publ
 }
 ```
 
+### Research Team
+
+| Role | Name | Affiliation |
+|---|---|---|
+| **Lead Researcher** | Omar Abdelhamid | AI R&D Engineer, Orange Innovation Labs |
+| | | 🎓 [Microsoft Azure AI Engineer Associate (AI-103)](https://learn.microsoft.com/api/credentials/share/en-gb/OmarAbdelhamid-8655/5628E1B02C79DA17?sharingId=C1C86A19180C72A2) |
+| **Co-Researcher** | Nour Walid | AI R&D Engineer, Orange Innovation Labs |
+| **Research Supervisor** | Dr. Ghada Khoriba (Soliman) | Head of SW Engineering & AI Research, Orange Innovation Labs |
+
 ---
-*Developed at Orange Innovation Labs Egypt. Released under the [MIT License](LICENSE).*
+
+<div align="center">
+
+*Developed at Orange Innovation Labs Egypt · Released under the [MIT License](LICENSE)*
+
+**[⬆ Back to Top](#)**
+
+</div>

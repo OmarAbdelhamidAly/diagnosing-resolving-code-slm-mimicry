@@ -150,16 +150,14 @@ class QLoRAFineTuner:
         """Load base model in 4-bit NF4 and prepare for QLoRA training."""
         hf_cache = self._settings.storage.hf_cache_dir or None
 
+        use_quant = str(getattr(self._settings.models, "quantization", "none")).lower() not in (
+            "none", "null", "false", "bfloat16", "float16", "fp16", "bf16", ""
+        )
         use_bf16 = (
             self._settings.models.torch_dtype == "bfloat16"
-            and torch.cuda.is_bf16_supported()
+            and torch.cuda.is_available() and torch.cuda.is_bf16_supported()
         )
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16 if use_bf16 else torch.float16,
-            bnb_4bit_use_double_quant=True,
-        )
+        compute_dtype = torch.bfloat16 if use_bf16 else (torch.float16 if torch.cuda.is_available() else torch.float32)
 
         print(f"[QLoRA] Loading tokenizer: '{self.model_name}'...")
         tokenizer = AutoTokenizer.from_pretrained(
@@ -168,27 +166,42 @@ class QLoRAFineTuner:
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        # For single-GPU QLoRA training with Trainer/Accelerate, use explicit device mapping
+        # For single-GPU training with Trainer/Accelerate, use explicit device mapping
         # instead of "auto" to prevent Accelerate's prepare_model from encountering torch.device(None)
         if torch.cuda.is_available():
             train_device_map = {"": torch.cuda.current_device()}
         else:
             train_device_map = None
 
-        print(f"[QLoRA] Loading 4-bit NF4 model: '{self.model_name}' on device_map={train_device_map}...")
-        model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            quantization_config=bnb_config,
-            device_map=train_device_map,
-            trust_remote_code=True,
-            cache_dir=hf_cache,
-        )
-
-        # Prepare the quantized model for k-bit training (enables trainable LoRA layers)
-        model = prepare_model_for_kbit_training(
-            model,
-            use_gradient_checkpointing=self.training_args["gradient_checkpointing"],
-        )
+        if use_quant:
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=compute_dtype,
+                bnb_4bit_use_double_quant=True,
+            )
+            print(f"[QLoRA] Loading 4-bit NF4 model: '{self.model_name}' on device_map={train_device_map}...")
+            model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                quantization_config=bnb_config,
+                device_map=train_device_map,
+                trust_remote_code=True,
+                cache_dir=hf_cache,
+            )
+            # Prepare the quantized model for k-bit training (enables trainable LoRA layers)
+            model = prepare_model_for_kbit_training(
+                model,
+                use_gradient_checkpointing=self.training_args["gradient_checkpointing"],
+            )
+        else:
+            print(f"[LoRA] Loading UNQUANTIZED native model ({compute_dtype}): '{self.model_name}' on device_map={train_device_map}...")
+            model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype=compute_dtype,
+                device_map=train_device_map,
+                trust_remote_code=True,
+                cache_dir=hf_cache,
+            )
 
         return model, tokenizer
 

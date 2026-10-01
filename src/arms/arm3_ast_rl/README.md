@@ -1,230 +1,181 @@
-# 🔬 Arm 3: Structure-Guided Policy Optimization (AST-RL)
+# Arm 3 — AST-RL (Model M5)
 
-**Project:** Diagnosing and Resolving Code Small Language Model Mimicry via a Reduction Ladder  
-**Institution:** Orange Innovation Labs — AI Research & Development Division  
-**Authors:** Omar Abdelhamid, Nour Walid (Equal Contribution)  
-**Supervisor:** Dr. Ghada Khoriba  
-**Model Identifier:** `M5_ast_rl` | **Base Model:** Qwen2.5-Coder-1.5B-Instruct  
-**Target Milestone:** Week 09 Evaluation & Mitigation Suite  
+> **Abstract Syntax Tree Guided Policy Optimization**  
+> *Orange Innovation Labs AI R&D · 2026*
 
 ---
 
-## 📑 Table of Contents
-1. [Executive Summary](#-executive-summary)
-2. [Problem Statement: The Limits of Binary Execution Rewards](#-problem-statement-the-limits-of-binary-execution-rewards)
-3. [Theoretical Foundations & Literature Gap](#-theoretical-foundations--literature-gap)
-4. [Mathematical Formulation: Normalized AST Similarity & Reward Shaping](#-mathematical-formulation-normalized-ast-similarity--reward-shaping)
-5. [The AST Normalization Engine (`ast_engine.py`)](#-the-ast-normalization-engine-ast_enginepy)
-6. [Composite Reward Engine Architecture (`reward_engine.py`)](#-composite-reward-engine-architecture-reward_enginepy)
-7. [Engineering Implementation & Training Dynamics](#-engineering-implementation--training-dynamics)
-8. [Empirical Hypotheses & Target Metrics](#-empirical-hypotheses--target-metrics)
-9. [Hardware & Hyperparameter Specifications](#-hardware--hyperparameter-specifications)
-10. [Formal Scientific Bibliography](#-formal-scientific-bibliography)
+## Overview
+
+Arm 3 addresses a fundamental limitation of binary RLVR: when code fails execution, the reward is `0` — even if the model produced the *correct algorithm* but made a trivial type error or off-by-one mistake. This **reward sparsity** blocks gradient flow and slows learning.
+
+AST-RL augments the binary execution reward with a **continuous structural similarity bonus** computed by comparing the normalized Abstract Syntax Tree (AST) of the generated code against the canonical reference solution's AST. This provides dense intermediate signal for near-correct solutions.
 
 ---
 
-## 📌 Executive Summary
+## Papers
 
-**Arm 3 (AST-RL)** introduces structural, syntax-aware reinforcement learning for code generation. In standard Reinforcement Learning with Verifiable Rewards (RLVR), the policy receives a sparse binary outcome:
-$$R_{\text{exec}} \in \{0, 1\}$$
-This creates severe credit assignment problems during policy optimization. If a model synthesizes an algorithmically sound solution with flawless control flow, but fails a single minor edge case or assertion, it receives $R=0$. Conversely, if a model memorizes a brittle heuristic that happens to pass unit tests while introducing severe architectural anti-patterns, it receives $R=1$.
+| Paper | Venue | What It Contributes |
+|---|:---:|---|
+| **TreeDiff: Structural Code Comparison via AST Differencing** | ASE 2025 | Tree-edit-distance metric on normalized ASTs to measure structural similarity, isolating control-flow equivalence from surface naming. Introduces the normalization convention: replace all variable names with `_v`, all args with `_a`. |
+| **VeriSeek: Structure-Guided Code Synthesis Verification** | ICSE 2025 | Uses AST-based structural similarity as a verification signal in code synthesis pipelines. Shows that structure-rewarded models generalize better across problem reformulations. |
 
-Arm 3 overcomes this limitation by evaluating the **Abstract Syntax Tree (AST)** of generated programs. We develop an automated AST normalization pipeline that strips superficial variable names, comments, and docstrings, isolating pure syntactic structure and control-flow logic. The policy is reinforced using a composite hybrid reward:
-$$R_{\text{total}}(y, y^*) = R_{\text{exec}}(y) + \beta \cdot \text{simAST}(\text{AST}(y), \text{AST}(y^*))$$
-This dense structural feedback guides the policy toward correct algorithmic representations even when terminal execution fails, drastically accelerating RL convergence and preventing shortcut mimicry.
-
----
-
-## 🎯 Problem Statement: The Limits of Binary Execution Rewards
-
-Standard RLVR algorithms (e.g., DeepSeekMath GRPO, PPO) treat the Python interpreter as a black box:
-1. **Reward Sparsity:** On complex multi-step rungs (e.g., $L_4$ Difficult, $L_5$ Combine), exploration success is extremely rare ($<10\%$). The policy receives zero reward gradient for $90\%$ of its rollouts, leading to gradient starvation and policy collapse.
-2. **Lexical Overfitting & Surface Bias:** Standard loss functions cannot distinguish between substantive algorithmic logic and superficial lexical differences (e.g., naming a loop variable `idx` vs. `element`).
-3. **Shortcut Vulnerability:** A model can exploit unit test loopholes by generating trivial lookup tables or hardcoded branches that pass specific test inputs without implementing the general algorithm.
+Links:
+- TreeDiff (ASE 2025): https://dl.acm.org/doi/proceedings/10.1145/3691620  
+- VeriSeek (ICSE 2025): https://conf.researchr.org/home/icse-2025
 
 ---
 
-## 📚 Theoretical Foundations & Literature Gap
+## The Core Insight: Structure over Surface
 
-Arm 3 grounds its methodology in recent breakthroughs in AST comparison and structural program synthesis:
-
-```
-┌─────────────────────────────────┐       ┌─────────────────────────────────┐
-│       TreeDiff (ASE 2025)       │       │       VeriSeek (ICSE 2025)      │
-│  Structural Code Tree Distances │       │   Syntax-Guided Code Synthesis  │
-│   [Normalized Node Edit Steps]  │       │     [Intermediate Verifiers]    │
-└────────────────┬────────────────┘       └────────────────┬────────────────┘
-                 │                                         │
-                 └────────────────────┬────────────────────┘
-                                      │
-                                      ▼
-                      ┌───────────────────────────────┐
-                      │        Arm 3: AST-RL          │
-                      │  Normalized AST Normalizer    │
-                      │   + 60% Jaccard Node Type     │
-                      │   + 40% Node Sequence Ratio   │
-                      │   + Composite Hybrid Reward   │
-                      └───────────────────────────────┘
-                                      ▲
-                                      │
-                 ┌────────────────────┴────────────────────┐
-                 │                                         │
-┌────────────────┴────────────────┐       ┌────────────────┴────────────────┐
-│      PyCross (ICSE 2024)        │       │   Reward Shaping (Ng et al.)    │
-│  Canonical Variable Placeholders│       │   Theoretical Guarantees of     │
-│  [Elimination of Lexical Bias]  │       │   Policy Invariance under F(s)  │
-└─────────────────────────────────┘       └─────────────────────────────────┘
-```
-
-### 🔬 Exhaustive Scientific Literature & Study Guide
-
-The theoretical and algorithmic architecture of **Arm 3 (AST-RL)** unites three foundational disciplines across reinforcement learning theory, compiler intermediate representation, and execution-guided code generation:
-
----
-
-#### 1. Policy Invariance & Reward Shaping — Mathematical Foundation for Auxiliary Dense Rewards
-* **Paper Title:** *Policy Invariance Under Reward Transformations: Theory and Application to Reward Shaping*
-* **Authors:** Andrew Y. Ng, Daishi Harada, Stuart Russell (UC Berkeley / Stanford University, ICML 1999)
-* **Direct Scientific Links:**
-  * 📄 [Direct PDF Download (UC Berkeley EECS)](https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf)
-* **Priority Sections for Technical Study:**
-  * **Section 3 (Potential-Based Shaping Functions):** Formal derivation of the necessary and sufficient condition for reward shaping functions to guarantee that the optimal policy $\pi^*$ under the shaped reward $\mathcal{R}'(s, a, s') = \mathcal{R}(s, a, s') + F(s, a, s')$ remains invariant to the original MDP.
-  * **Theorem 1 & 2 (Policy Invariance):** Mathematical proof that potential-based shaping preserves policy consistency across infinite- and finite-horizon Markov Decision Processes, preventing the agent from exploiting unintended loops or "reward hacks".
-* **Bridge to Our Implementation:**
-  * Implemented in [`src/arms/arm3_ast_rl/reward_engine.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/reward_engine.py): Code execution in RL suffers from severe sparsity (the agent receives $0.0$ reward on failing 1 out of 10 test assertions despite generating $90\%$ of the logic correctly). By grounding auxiliary rewards in AST similarity ($\beta \cdot \text{simAST}$ with $\beta=0.3$), we provide continuous gradient feedback without distorting the final verification objective $\mathcal{R}_{\text{exec}}$.
-
----
-
-#### 2. CodeBLEU & AST Representation — Overcoming Lexical Bias
-* **Paper Title:** *CodeBLEU: a Method for Automatic Evaluation of Code Synthesis*
-* **Authors:** Shuo Ren, Daya Guo, Shuai Lu, Long Zhou, Shujie Liu, Duyu Tang, Neel Sundaresan, Ming Zhou (Microsoft Research, 2020)
-* **Direct Scientific Links:**
-  * 🔗 [arXiv Abstract Page (2009.10297)](https://arxiv.org/abs/2009.10297)
-  * 📄 [Direct PDF Download](https://arxiv.org/pdf/2009.10297)
-* **Priority Sections for Technical Study:**
-  * **Section 2 & 3 (Syntax and Data-Flow Tree Matching):** Explains why standard n-gram metrics (BLEU, ROUGE) catastrophically fail on code because code exhibits strict syntactic grammars and variable renaming invariance.
-  * **Section 3.2 (AST Node Sequence Parsing):** Derivation of Abstract Syntax Tree node traversal matching. Shows that comparing tree node types isolates control flow (loops, conditionals, function definitions) from superficial variable names.
-* **Bridge to Our Implementation:**
-  * Implemented in [`src/arms/arm3_ast_rl/ast_engine.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/ast_engine.py): We construct an `ASTNormalizer` that systematically replaces variable identifiers with canonical `_v` and parameters with `_a`. We then calculate a composite structural score:
-    $$\text{simAST}(y, y^*) = 0.6 \cdot \text{Jaccard}(\mathcal{S}_y, \mathcal{S}^*) + 0.4 \cdot \text{LengthRatio}(y, y^*)$$
-
----
-
-#### 3. CodeRL — Reinforcement Learning with Compiler and Unit Test Feedback
-* **Paper Title:** *CodeRL: Mastering Code Generation through Pretrained Models and Deep Reinforcement Learning*
-* **Authors:** Hung Le, Yue Wang, Akhilesh Deepak Gotmare, Silvio Savarese, Steven C.H. Hoi (Salesforce Research, NeurIPS 2022)
-* **Direct Scientific Links:**
-  * 🔗 [arXiv Abstract Page (2207.01780)](https://arxiv.org/abs/2207.01780)
-  * 📄 [Direct PDF Download](https://arxiv.org/pdf/2207.01780)
-* **Priority Sections for Technical Study:**
-  * **Section 3 (Actor-Critic RL for Code Synthesis):** Formulation of code generation as a sequence of token generation decisions under an execution environment.
-  * **Section 3.2 (Fine-Grained Feedback Signals):** Distinguishes between syntax errors (`SyntaxError`), runtime exceptions (`ZeroDivisionError`, `IndexError`), and assertion failures, mapping each failure type to distinct credit signals.
-* **Bridge to Our Implementation:**
-  * Implemented in [`src/arms/arm3_ast_rl/trainer.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/trainer.py): If the generated completion throws a `SyntaxError` during AST parsing, $\text{simAST}$ is immediately clamped to $0.0$, heavily penalizing malformed code while rewarding executable, syntactically aligned rollouts.
-
----
-
-## 📐 Mathematical Formulation: Normalized AST Similarity & Reward Shaping
-
-### 1. Abstract Syntax Tree Normalization
-Let $C$ denote raw Python code. The compiler maps $C$ to an AST:
-$$T = \text{parse}(C)$$
-To eliminate lexical superficiality, we define a transformation $\mathcal{N}: T \to \tilde{T}$:
-* Every variable identifier $v \in \text{Variables}$ is replaced with canonical placeholder `_v`.
-* Every function argument $a \in \text{Arguments}$ is replaced with canonical placeholder `_a`.
-* Type annotations and docstring nodes are stripped.
-
-The structural signature is the depth-first walk of node type names:
-$$\text{Sig}(C) = [\text{type}(n) \mid n \in \text{walk}(\mathcal{N}(\text{parse}(C)))]$$
-
-### 2. Structural Tree Similarity Metric ($\text{simAST}$)
-Given generated code $y$ and reference implementation $y^*$, let $\mathcal{S}_y = \text{set}(\text{Sig}(y))$ and $\mathcal{S}^* = \text{set}(\text{Sig}(y^*))$:
-$$\text{Jaccard}(\mathcal{S}_y, \mathcal{S}^*) = \frac{|\mathcal{S}_y \cap \mathcal{S}^*|}{|\mathcal{S}_y \cup \mathcal{S}^*|}$$
-$$\text{LengthRatio}(y, y^*) = \frac{\min(|\text{Sig}(y)|, |\text{Sig}(y^*)|)}{\max(|\text{Sig}(y)|, |\text{Sig}(y^*)|)}$$
-
-The unified structural similarity is:
-$$\text{simAST}(y, y^*) = 0.6 \cdot \text{Jaccard}(\mathcal{S}_y, \mathcal{S}^*) + 0.4 \cdot \text{LengthRatio}(y, y^*) \in [0, 1]$$
-
-### 3. Composite Hybrid Reward Function
-$$\mathcal{R}_{\text{total}}(y, y^*) = \mathcal{R}_{\text{exec}}(y) + \beta \cdot \text{simAST}(y, y^*)$$
-Where:
-* $\mathcal{R}_{\text{exec}}(y) = 1.0$ if all sandbox unit tests pass, else $0.0$.
-* $\beta = 0.3$ is the structural guidance coefficient.
-* If a Python `SyntaxError` occurs during parsing, $\text{simAST} = 0.0$.
-
----
-
-## 🔍 The AST Normalization Engine (`ast_engine.py`)
-
-Implemented in [`src/arms/arm3_ast_rl/ast_engine.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/ast_engine.py):
+Two implementations of the same algorithm should be judged as structurally identical even if they use different variable names:
 
 ```python
-class ASTNormalizer(ast.NodeTransformer):
-    """Replaces identifiers with canonical placeholders to isolate control flow."""
-    def visit_Name(self, node: ast.Name) -> ast.Name:
-        return ast.copy_location(ast.Name(id="_v", ctx=node.ctx), node)
+# Implementation A:
+def two_sum(nums, target):
+    seen = {}
+    for i, n in enumerate(nums):
+        if target - n in seen: return [seen[target - n], i]
+        seen[n] = i
 
-    def visit_arg(self, node: ast.arg) -> ast.arg:
-        return ast.copy_location(ast.arg(arg="_a", annotation=None), node)
+# Implementation B (different names, same algorithm):
+def find_pair(arr, goal):
+    table = {}
+    for idx, val in enumerate(arr):
+        if goal - val in table: return [table[goal - val], idx]
+        table[val] = idx
+```
 
-def simAST(code_gen: str, code_ref: str) -> float:
-    sig_gen = get_ast_signature(code_gen)
-    sig_ref = get_ast_signature(code_ref)
-    if "SyntaxError" in sig_gen or "SyntaxError" in sig_ref:
-        return 0.0
-    jaccard = len(set(sig_gen) & set(sig_ref)) / max(len(set(sig_gen) | set(sig_ref)), 1)
-    len_ratio = min(len(sig_gen), len(sig_ref)) / max(len(sig_gen), len(sig_ref), 1)
-    return round(float(0.6 * jaccard + 0.4 * len_ratio), 4)
+After AST normalization, both produce identical node-type sequences. The `simAST` score between them is `1.0`.
+
+A model that correctly identifies the hash-map approach but uses wrong variable names gets `R_exec = 0` (execution fails due to other error) but `R_AST ≈ 0.9` — meaningful gradient signal.
+
+---
+
+## AST Normalization
+
+Implemented in [`ast_engine.py`](ast_engine.py) via `ASTNormalizer(ast.NodeTransformer)`:
+
+```python
+# All Name nodes (variables) → "_v"
+def visit_Name(self, node): return ast.Name(id="_v", ...)
+
+# All arg nodes (function parameters) → "_a"  
+def visit_arg(self, node): return ast.arg(arg="_a", ...)
+```
+
+Then the normalized AST is walked depth-first to produce a **node-type sequence**:
+```
+["Module", "FunctionDef", "arguments", "arg", "For", "Assign", "If", "Return", ...]
+```
+
+String literals and docstrings are excluded — only structural node types count.
+
+---
+
+## simAST Similarity Metric
+
+Implemented in [`ast_engine.py`](ast_engine.py):
+
+```
+simAST(y, y*) = 0.6 · Jaccard(σ(y), σ(y*)) + 0.4 · LenRatio(σ(y), σ(y*))
+```
+
+Where `σ(c)` = normalized AST node-type sequence of code `c`:
+
+| Component | Formula | Weight | Measures |
+|---|---|:---:|---|
+| **Jaccard similarity** | `|σ(y) ∩ σ(y*)| / |σ(y) ∪ σ(y*)|` | **60%** | Which code constructs are used (loops, conditionals, returns) |
+| **Length ratio** | `min(|σ|, |σ*|) / max(|σ|, |σ*|, 1)` | **40%** | Completeness — penalizes truncated or stub solutions |
+
+`simAST ∈ [0.0, 1.0]`
+
+---
+
+## Composite Reward Function
+
+Implemented in [`reward_engine.py`](reward_engine.py):
+
+```
+R_total(y, y*) = R_exec(y) + β · simAST(y, y*)
+```
+
+| Term | Value | Description |
+|---|---|---|
+| `R_exec(y)` | ∈ {0, 1} | Binary sandbox pass/fail |
+| `simAST(y, y*)` | ∈ [0.0, 1.0] | Structural AST similarity to canonical reference |
+| `β` | **0.3** | AST bonus weight |
+
+**Example gradient signals:**
+
+| Scenario | R_exec | simAST | R_total |
+|---|:---:|:---:|:---:|
+| Correct solution | 1.0 | 0.95 | **1.285** |
+| Right algorithm, trivial type error | 0.0 | 0.88 | **0.264** ← dense signal! |
+| Wrong algorithm | 0.0 | 0.30 | 0.090 |
+| Empty/syntax error | 0.0 | 0.0 | 0.000 |
+
+---
+
+## Training Algorithm (Step-by-Step)
+
+```
+For step = 1 to 500:
+  1. Sample task from pool: L0 (164 tasks) + L1 (100 tasks) = 264 total
+  2. Generate G=4 completions y^(g) [temperature=0.8, top_p=0.95]
+  3. For each completion y^(g):
+       a. Execute in subprocess sandbox → R_exec ∈ {0, 1}
+       b. Compute simAST(y^(g), y*_canonical) ∈ [0.0, 1.0]
+       c. R_total^(g) = R_exec + 0.3 · simAST
+  4. Normalize: Â_g = (R_g - mean(R)) / (std(R) + 1e-8)
+  5. Micro-batched backward (batch=1 per sample):
+       loss_i = -(log_π_θ(y^(i)|x) · Â_i) / (G · grad_accum_steps)
+  6. Accumulate gradients for 2 steps, then:
+       clip_grad_norm_(1.0) → AdamW.step() → zero_grad()
+  7. Checkpoint every 100 steps
 ```
 
 ---
 
-## 🏗️ Composite Reward Engine Architecture (`reward_engine.py`)
+## Implementation Files
 
-Implemented in [`src/arms/arm3_ast_rl/reward_engine.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/reward_engine.py):
-* Evaluates code in isolated `SubprocessSandbox`.
-* Concurrently parses AST and calculates structural similarity against canonical ground truth.
-* Returns atomic breakdown: `total_reward`, `exec_reward`, `ast_similarity`, and `ast_bonus`.
-
----
-
-## 🛠️ Engineering Implementation & Training Dynamics
-
-The module is structured under `src/arms/arm3_ast_rl/`:
-* [`ast_engine.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/ast_engine.py): Syntax normalizer, tree distance calculator.
-* [`reward_engine.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/reward_engine.py): Hybrid reward fusion.
-* [`trainer.py`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/trainer.py): Full 500-step RLVR policy optimizer with group-relative advantage estimation.
-* [`notebooks/arm_03_ast_rl.ipynb`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/notebooks/arm_03_ast_rl.ipynb): Interactive training harness with live AST similarity trajectory visualization.
+| File | Purpose |
+|---|---|
+| [`trainer.py`](trainer.py) | `ASTRLTrainer` — full 500-step GRPO + AST reward loop |
+| [`ast_engine.py`](ast_engine.py) | `ASTNormalizer`, `get_ast_signature()`, `simAST()`, `ast_reward()` |
+| [`reward_engine.py`](reward_engine.py) | `ASTRewardEngine` — combines exec + AST + group normalization |
 
 ---
 
-## 📊 Empirical Hypotheses & Target Metrics
+## Hyperparameters
 
-| Metric | M1 Baseline | M4 Standard GRPO | M5 AST-RL Target | Scientific Rationale |
-| :--- | :---: | :---: | :---: | :--- |
-| **$L_0$ HumanEval** | **92.7%** | 88.0% | **$\ge 91.5\%$** | Structural guidance preserves canonical algorithm signatures. |
-| **$L_4$ Difficult** | 76.0% | 80.0% | **$\ge 86.0\%$** | Dense AST reward overcomes execution sparsity on complex tasks. |
-| **Ladder AUC** | 81.57% | 83.50% | **$\ge 85.5\%$** | Superior overall generalization across all rungs. |
-| **Syntax Error Rate**| 4.2% | 3.8% | **$\le 0.8\%$** | Immediate AST penalty actively eliminates malformed syntax. |
-
----
-
-## ⚙️ Hardware & Hyperparameter Specifications
-
-* **Base Model:** `Qwen/Qwen2.5-Coder-1.5B-Instruct`
-* **LoRA Rank ($r$):** 16 | **LoRA Alpha ($\alpha$):** 32 | **Dropout:** 0.05
-* **Group Size ($G$):** 4 rollouts per prompt
-* **AST Reward Weight ($\beta$):** 0.3 | **Tree Distance Alpha ($\alpha$):** 0.05
-* **Learning Rate:** $1 \times 10^{-5}$ (AdamW, linear decay)
-* **Sampling Temperature:** 0.8 | **Max New Tokens:** 256
-* **Execution Timeout:** 3.0s per completion in `SubprocessSandbox`
-* **Peak VRAM:** $\sim 4.8\text{ GB}$ on NVIDIA RTX 3070 Ti 8GB.
+| Parameter | Value |
+|---|---|
+| Base model | `Qwen/Qwen2.5-Coder-1.5B-Instruct` |
+| Quantization | 4-bit NF4, double quant |
+| LoRA rank r | 16 |
+| LoRA α | 32 |
+| β_ast (AST bonus weight) | **0.3** |
+| α_tree (exponential decay) | 0.05 |
+| Learning rate | 1e-5 |
+| Group size G | 4 |
+| Gradient accumulation | 2 steps |
+| Training steps | 500 |
+| Task pool | L0 (164) + L1 (100) = 264 tasks |
+| Sandbox timeout | 3.0s |
 
 ---
 
-## 📖 Formal Scientific Bibliography
+## Scientific Hypothesis
 
-1. **Zhang, Y., et al. (2025).** *TreeDiff: Structural Program Comparison via Normalized Abstract Syntax Tree Edit Distance.* IEEE/ACM International Conference on Automated Software Engineering (ASE 2025).
-2. **Chen, H., et al. (2025).** *VeriSeek: Structure-Guided Code Generation with Intermediate Verifiers.* International Conference on Software Engineering (ICSE 2025).
-3. **Liu, M., et al. (2024).** *PyCross: Canonical Abstract Syntax Tree Representations for Cross-Domain Program Reasoning.* ACM Transactions on Software Engineering (TOSEM 2024).
-4. **Ng, A. Y., Harada, D., & Russell, S. (1999).** *Policy Invariance Under Reward Transformations: Theory and Application to Reward Shaping.* International Conference on Machine Learning (ICML 1999).
+> If AST-based structural similarity provides dense gradient signal for near-correct solutions that binary RLVR leaves with zero reward, then **M5 should outperform M4 (Standard GRPO)** by learning to produce structurally sound code even under transformation.
+
+**Predicted comparison:** `ΔLadder_AUC(M5 - M4) > 0`  
+**Predicted mechanism:** The `β·simAST` term creates non-zero gradients for completions that fail execution but have correct control flow — reducing the effective reward sparsity on L2/L3 tasks.
+
+---
+
+## Checkpoint
+
+Saved to: `checkpoints/rlvr_ast_final/`  
+Notebook: [`notebooks/arm_03_ast_rl.ipynb`](../../notebooks/arm_03_ast_rl.ipynb)
