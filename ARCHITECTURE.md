@@ -1,164 +1,163 @@
-# Software Architecture & Design Blueprint
-**Project:** Diagnosing & Resolving Code SLM Mimicry  
-**Organization:** Orange Innovation Labs — AI Research Division  
+# 🏛️ Software Architecture & Design Blueprint
+**Project:** Diagnosing & Resolving Code SLM Mimicry via Invariance-Regularized Policy Optimization  
+**Organization:** Orange Innovation Labs — AI Research & Advanced Innovation Division  
 **Authors:** Omar Abdelhamid, Nour Walid  
-**Supervisor:** Dr. Ghada  
+**Academic Supervisor:** Dr. Ghada Soliman  
 
 ---
 
-## Architectural Philosophy
+## 1. Architectural Philosophy
 
-This codebase is designed following **Robert C. Martin's Clean Architecture** principles adapted for scientific machine learning research. The primary objectives are:
+This codebase is designed following **Robert C. Martin's Clean Architecture** principles adapted for modern scientific machine learning research. The primary objectives are:
 
-1. **Separation of Concerns:** Business logic (reasoning diagnosis, reward computation, evaluation metrics) is completely decoupled from external frameworks (Hugging Face, PyTorch, BitsAndBytes, OS subprocessing).
-2. **Dependency Inversion Principle (DIP):** High-level application services depend upon abstract protocols (`Protocol` / `ABC`), not on concrete infrastructure classes.
-3. **Reproducibility & Testability:** Every component (sandbox execution, error classification, prompt formatting) can be tested in isolation with mocked inputs.
-4. **Team Scalability:** Clear layer boundaries enable multiple researchers to build new mitigation arms (e.g. DPO, PPO, Tree-Search) without modifying existing evaluation pipelines.
+1. **Separation of Concerns:** Core domain logic (evaluation metrics, error classification, reward computation) is decoupled from external execution engines (PyTorch, BitsAndBytes, HuggingFace Transformers, OS Subprocesses).
+2. **Dependency Inversion Principle (DIP):** High-level orchestration services depend on abstract protocols (`Protocol` / `ABC`), not concrete infrastructure implementations.
+3. **Reproducibility & Determinism:** Every component (sandbox execution, AST normalization, metric calculation) is fully deterministic and testable in isolation without GPU access.
+4. **Independent Research Arms:** Each mitigation technique is isolated in its own self-contained module within `src/arms/`, allowing parallel development and ablation without regression risks.
 
 ---
 
-## Layered Architecture Overview
+## 2. Layered Architecture Diagram
 
 ```
  ┌─────────────────────────────────────────────────────────────────────────┐
  │                   PRESENTATION & ENTRY POINTS                           │
- │     • scripts/run_stage*.py (CLI)     • notebooks/nb_*.ipynb            │
+ │     • notebooks/nb_06_evaluation_suite.ipynb (Master Ladder Benchmark)  │
+ │     • notebooks/arm_01_*.ipynb ... arm_04_*.ipynb (Interactive Training)│
+ │     • scripts/prepare_kaggle_upload.py & scripts/train_arm4.py          │
  └────────────────────────────────────┬────────────────────────────────────┘
                                       │
                                       ▼
  ┌─────────────────────────────────────────────────────────────────────────┐
- │                   APPLICATION SERVICES (Use Cases)                      │
- │     • DataService                     • EvaluationService               │
- │     • QLoRATrainerService             • InvGRPOTrainerService           │
- │     • AnalysisService                 • MetricsAggregator               │
+ │                   APPLICATION & EVALUATION SERVICES                     │
+ │     • EvaluationSuite (Batched Inference + Parallel Sandbox Testing)    │
+ │     • BenchmarkRegistry (764-Task Pool across L0-L5 + Ctrl)             │
+ │     • SuiteReporter (Master Table, Figures, LaTeX Exporter)             │
+ │     • Mitigation Trainers (InvGRPO, ContrastiveDPO, AST-RL, StepRLVR)   │
  └────────────────────────────────────┬────────────────────────────────────┘
                                       │
                                       ▼
  ┌─────────────────────────────────────────────────────────────────────────┐
- │                   DOMAIN CORE (Entities & Protocols)                    │
+ │                   DOMAIN CORE (Zero External ML Dependencies)           │
  │     • BenchmarkTask                   • ExecutionResult                 │
  │     • LevelEvaluationReport           • ErrorCategory                   │
  │     • ICodeExecutor (Protocol)        • IModelRunner (Protocol)         │
  │     • IBenchmarkLoader (Protocol)     • IErrorClassifier (Protocol)     │
+ │     • Metrics Engine (9 Pure Literature Functions)                      │
  └────────────────────────────────────▲────────────────────────────────────┘
                                       │ (implements)
  ┌────────────────────────────────────┴────────────────────────────────────┐
- │                   INFRASTRUCTURE (External Adapters)                    │
- │     • MultiprocessSandbox (Subprocess Code Isolation)                   │
- │     • HuggingFaceBenchmarkLoader (HF Datasets Loader)                   │
- │     • QuantizedModelRunner (4-bit NF4 BitsAndBytes + PEFT)              │
- │     • RuleBasedErrorClassifier (Failure Mode Taxonomy)                  │
- │     • Atomic File Persistence (JSONL / YAML / JSON)                     │
+ │                   INFRASTRUCTURE & EXTERNAL ADAPTERS                    │
+ │     • SubprocessSandbox / MultiprocessSandbox (Process-isolated exec)   │
+ │     • QuantizedModelRunner (4-bit NF4 BitsAndBytes + LoRA PEFT)         │
+ │     • RuleBasedErrorClassifier (6-Way Failure Mode Heuristics)          │
+ │     • extract_code (Torch-Free Markdown & Code Syntax Normalizer)       │
+ │     • Centralized Settings (Pydantic v2 + config.yaml + .env)           │
  └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Repository Directory Responsibilities
+## 3. Repository Directory Responsibilities
 
 ```
 diagnosing-resolving-code-slm-mimicry/
 │
-├── config.yaml                            # Global single source of truth for all hyperparameters
-├── requirements.txt                       # Locked dependencies with exact versions
-├── README.md                              # Main project documentation & quickstart
+├── README.md                              # Main publication documentation & quickstart
 ├── ARCHITECTURE.md                        # This software design blueprint
-├── implementation_plan.md                 # Exhaustive stage-by-stage implementation plan
+├── WORKFLOW.md                            # Comprehensive stage-by-stage execution workflow
+├── config.yaml                            # Global single source of truth for all hyperparameters
+├── requirements.txt                       # Locked Python dependencies with CUDA 12.4 compatibility
+├── environment.yml                        # Conda environment definition
+├── .env.example                           # Template for local environment variables & cache paths
 │
-├── proposal/                              # Formal LaTeX research proposal for Dr. Ghada
+├── proposal/                              # Formal LaTeX research proposal for Orange Labs
 │   ├── proposal.tex                       # 13-page technical proposal (Orange branding)
-│   └── references.bib                     # 18 curated academic references
+│   └── references.bib                     # Academic bibliography
 │
 ├── data/
-│   ├── ladder/                            # Standardized JSONL benchmark datasets (L0-L5)
-│   ├── distillation/                      # Filtered Chain-of-Thought training corpora
-│   └── livecode_bench/                    # Contamination-free temporal control tasks
+│   ├── ladder/                            # 764 standardized JSONL benchmark tasks (L0–L5 + Ctrl)
+│   │   ├── L0_humaneval_standard.jsonl    # 164 tasks (Canonical HumanEval)
+│   │   ├── L1_evoeval_subtle.jsonl        # 100 tasks (Subtle prompt perturbations)
+│   │   ├── L2_evoeval_tooluse.jsonl       # 100 tasks (Tool-use & verbose perturbations)
+│   │   ├── L3_evoeval_creative.jsonl      # 100 tasks (Creative reasoning tasks)
+│   │   ├── L4_evoeval_difficult.jsonl     # 100 tasks (Algorithmic & edge-case challenges)
+│   │   ├── L5_evoeval_combine.jsonl       # 100 tasks (Combinatorial & compositional tasks)
+│   │   └── Ctrl_livecode_lite.jsonl       # 100 tasks (Temporal OOD control: LiveCodeBench Lite)
+│   └── distillation/                      # Filtered Chain-of-Thought corpora for SFT distillation
 │
 ├── src/
 │   ├── core/                              # Layer 1: Domain Core (Zero external ML dependencies)
-│   │   ├── __init__.py
-│   │   ├── entities.py                    # BenchmarkTask, ExecutionResult, LevelEvaluationReport, ErrorCategory
-│   │   ├── interfaces.py                  # Protocols: ICodeExecutor, IBenchmarkLoader, IModelRunner, IErrorClassifier
-│   │   └── exceptions.py                  # Domain Exceptions (SandboxTimeoutError, VRAMExceededError)
+│   │   ├── entities.py                    # BenchmarkTask, ExecutionResult, LevelEvaluationReport
+│   │   ├── interfaces.py                  # Protocols: ICodeExecutor, IModelRunner, IErrorClassifier
+│   │   ├── exceptions.py                  # Domain Exceptions (SandboxTimeoutError, VRAMExceededError)
+│   │   └── config.py                      # Centralized Pydantic v2 Settings Loader
 │   │
 │   ├── infrastructure/                    # Layer 2: External Adapters & IO
-│   │   ├── __init__.py
-│   │   ├── sandbox.py                     # MultiprocessSandbox (Process isolation, timeout guarding)
-│   │   ├── hf_loader.py                   # HuggingFaceBenchmarkLoader (Dataset fetching & disk caching)
-│   │   ├── model_loader.py                # QuantizedModelRunner (4-bit NF4 BitsAndBytes + LoRA inference)
+│   │   ├── sandbox.py                     # SubprocessSandbox (Process isolation, UTF-8, auto-indent)
+│   │   ├── model_loader.py                # QuantizedModelRunner (4-bit NF4, batched inference, multi-EOS)
 │   │   ├── classifier.py                  # RuleBasedErrorClassifier (Failure taxonomy heuristics)
-│   │   └── persistence.py                 # Atomic JSONL/JSON/YAML persistence
+│   │   ├── code_utils.py                  # extract_code (Torch-free markdown & code extraction)
+│   │   └── persistence.py                 # Atomic JSONL/JSON streaming utilities
 │   │
-│   ├── shared/                            # Shared Cross-Stage Components
-│   │   ├── __init__.py
-│   │   ├── data_service.py                # Benchmark ingestion & ground-truth verification
-│   │   ├── engine.py                      # Unified EvaluationEngine (inference, sandbox, reports)
-│   │   ├── metrics.py                     # Ladder AUC, Collapse Point, MRI calculations
-│   │   └── plots.py                       # Publication-grade degradation & taxonomy plots
+│   ├── evaluation/                        # Unified Evaluation Framework
+│   │   ├── registry.py                    # BenchmarkRegistry (Pre-cached task pool loader)
+│   │   ├── metrics.py                     # 9 Pure academic metric functions (Ladder AUC, MRI, etc.)
+│   │   ├── suite.py                       # EvaluationSuite (Batched generation + parallel sandbox)
+│   │   └── reporter.py                    # SuiteReporter (Publication figures, LaTeX & master table)
 │   │
-│   ├── stage2_baseline/                   # Stage 2 Baseline Probing
-│   │   ├── __init__.py
-│   │   └── evaluation_service.py          # Level & suite evaluation loop
-│   │
-│   ├── stage3_distillation/               # Stage 3 SFT Distillation
-│   │   ├── __init__.py
-│   │   ├── dataset_builder.py             # Vanilla CoT distillation builder
-│   │   └── contrastive_builder.py         # Shortcut-rejection contrastive builder
-│   │
-│   ├── stage4_training/                   # Stage 4 QLoRA SFT Training
-│   │   ├── __init__.py
-│   │   └── qlora_finetune.py              # 4-bit NF4 QLoRA fine-tuner
-│   │
-│   └── stage5_comparison/                 # Stage 5 Post-Training Comparison
-│       ├── __init__.py
-│       └── analysis_service.py            # Cross-model summary tables & degradation comparison
+│   └── arms/                              # 5 Modular Mitigation Arms
+│       ├── standard_grpo/                 # Baseline: Standard GRPO (Outcome reward only)
+│       ├── arm1_inv_grpo/                 # Primary Contribution: Invariance-Regularized Policy Optimization
+│       ├── arm2_contrastive_dpo/          # Arm 2: Contrastive Shortcut-Rejection DPO
+│       ├── arm3_ast_rl/                   # Arm 3: AST-Guided Structural Policy Optimization
+│       └── arm4_step_rlvr/                # Arm 4: Stepwise Contract-Verified Process RLVR
 │
-├── notebooks/                             # Layer 4: Interactive Notebooks
-│   ├── nb_01_data_pipeline.ipynb          # Stage 1: Benchmark Data Ingestion & Ground-Truth Verification
-│   ├── nb_02_baseline_eval.ipynb          # Stage 2: Baseline (M1) Evaluation & Collapse Probing
-│   ├── nb_03_distillation.ipynb           # Stage 3: Vanilla CoT & Contrastive SFT Dataset Construction
-│   ├── nb_04_qlora_training.ipynb         # Stage 4: QLoRA Fine-Tuning (M2 Vanilla vs M3 Contrastive)
-│   └── nb_05_post_training_eval.ipynb     # Stage 5: Comparative Evaluation & Publication Figures
+├── notebooks/                             # Interactive Research & Execution Notebooks
+│   ├── nb_01_data_pipeline.ipynb          # Benchmark Ingestion & Ground-Truth Verification
+│   ├── nb_02_baseline_eval.ipynb          # Baseline (M1) Initial Probing
+│   ├── nb_03_distillation.ipynb           # CoT Distillation Corpus Creation
+│   ├── nb_04_qlora_training.ipynb         # QLoRA Training for M2
+│   ├── nb_05_post_training_eval.ipynb     # Comparative Probing
+│   ├── nb_06_evaluation_suite.ipynb       # 🏆 Master Evaluation Suite for all 7 Models
+│   ├── arm_01_inv_grpo.ipynb              # Training Notebook for Arm 1 (M6)
+│   ├── arm_02_contrastive_sft.ipynb       # Training Notebook for Arm 2 (M3)
+│   ├── arm_03_ast_rl.ipynb                # Training Notebook for Arm 3 (M5)
+│   └── arm_04_step_rlvr.ipynb             # Training Notebook for Arm 4 (M7)
 │
-├── scripts/                               # Layer 4: CLI Entry Points
-│   ├── run_stage1_data.py                 # CLI for Stage 1 data pipeline
-│   ├── run_stage2_eval.py                 # CLI for Stage 2 baseline eval
-│   ├── run_stage3_distill_data.py         # CLI for Stage 3 SFT corpus generation
-│   ├── run_stage4_qlora.py                # CLI for Stage 4 SFT training
-│   ├── run_stage5_rlvr.py                 # CLI for Stage 5 RL training
-│   └── run_stage6_analysis.py             # CLI for Stage 6 comparative analysis
+├── checkpoints/                           # LoRA Adapter Weights (Saved per arm)
+│   ├── qlora_vanilla_adapter/             # M2: Vanilla SFT
+│   ├── qlora_contrastive_adapter/         # M3: Contrastive DPO
+│   ├── standard_grpo_final/               # M4: Standard GRPO
+│   ├── rlvr_ast_final/                    # M5: AST-RL
+│   ├── inv_grpo_final/                    # M6: Inv-GRPO (Primary Contribution)
+│   └── step_rlvr_final/                   # M7: Step-RLVR
 │
-└── results/                               # Structured output evaluation reports & figures
-    ├── baseline/
-    ├── distilled_vanilla/
-    ├── distilled_contrastive/
-    ├── rlvr_vanilla/
-    ├── rlvr_ast/
-    └── rlvr_inv_grpo/
+├── scripts/                               # Automation & Packaging Utilities
+│   ├── prepare_kaggle_upload.py           # Clean checkpoint packaging & benchmark zipping
+│   └── train_arm4.py                      # Standalone CLI training runner for Arm 4
+│
+└── results/                               # Generated Evaluation Artifacts
+    ├── master_comparison_table.csv        # Cumulative multi-model standings
+    └── <MODEL_ID>/eval_report.json        # Per-model detailed rung reports & task records
 ```
 
 ---
 
-## Team Collaboration Guidelines (For Omar & Nour)
+## 4. Design Patterns & Best Practices
 
-### 1. Adding a New Benchmark Level
-To add a new benchmark (e.g. MBPP or a new EvoEval split):
-1. Open `src/infrastructure/hf_loader.py` and register the dataset path in `LADDER_DATASET_CONFIGS`.
-2. Do **not** modify `DataService` or `EvaluationService` — they operate directly on `BenchmarkTask` entities.
+### A. Subprocess Sandboxing & Execution Safety
+User-generated code from language models can trigger infinite loops, memory leaks, or execution errors.  
+- All test runs are executed in an isolated OS process via `SubprocessSandbox`.
+- Communication happens over `sys.stdin` to prevent command-line character limit overflow on Windows.
+- Per-task timeout enforcement (default: 8.0s) prevents hanging threads.
 
-### 2. Adding a New Model or Custom Sampling Strategy
-1. Implement the `IModelRunner` protocol in `src/infrastructure/model_loader.py` (e.g. `vLLMRunner` or `APIRunner`).
-2. Pass the new runner instance into `EvaluationService(model_runner=...)`.
+### B. Batched Generation on Edge & Cloud Hardware
+- `QuantizedModelRunner.generate_batch()` uses left-padding (`padding_side="left"`) to evaluate batches of 16 tasks simultaneously.
+- Reduces inference latency from ~40s/task to ~2.5s/task on NVIDIA T4 GPUs.
+- Multi-token EOS termination (`<|im_end|>`, `<|endoftext|>`) eliminates runaway token generation.
 
-### 3. Adding a New Mitigation Arm
-1. Create your trainer orchestrator in `src/services/training/my_new_arm.py`.
-2. Ensure your reward calculation implements `IRewardComputer` from `src/core/interfaces.py`.
-3. Create a CLI runner in `scripts/run_stage5_my_arm.py`.
-
----
-
-## Coding Standards
-- **Strict Type Hinting:** All functions must include complete Python type hints (`typing.List`, `Dict`, `Optional`, `Tuple`).
-- **No Heavy Frameworks in Domain Core:** `src/core/` must never import `torch`, `transformers`, `datasets`, or `bitsandbytes`.
-- **Atomic File Writing:** Always use `src.infrastructure.persistence.save_jsonl` / `save_json` to prevent partial corrupted files during crashes.
-- **Process Isolation:** Never run user-generated code with raw `exec()` in the main thread; always use `MultiprocessSandbox` with explicit timeouts.
+### C. Pure Functional Metrics Engine
+- All metrics in `src/evaluation/metrics.py` are stateless, pure mathematical functions.
+- Independent of PyTorch, Transformers, or GPU hardware.
+- Tested and verifiable directly against the literature (Chen et al. 2021, Jiang et al. 2024, Aly et al. 2026).

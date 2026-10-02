@@ -1,7 +1,7 @@
 # =====================================================================
-# Reduction Ladder for Code & Multi-Arm Mitigation
+# Reduction Ladder for Code Reasoning & Multi-Arm Mitigation
 # Configuration File — Single Source of Truth
-# Orange Innovation Labs
+# Orange Innovation Labs — AI Research Division
 # =====================================================================
 
 project:
@@ -41,8 +41,9 @@ evaluation:
   temperature_greedy: 0.0
   temperature_sample: 0.8
   num_samples: 5
-  timeout_seconds: 5.0
-  max_new_tokens: 1024
+  timeout_seconds: 8.0
+  max_new_tokens: 512
+  batch_size: 16
 
 distillation:
   num_samples: 10000
@@ -52,6 +53,9 @@ distillation:
   vanilla_file: "sft_positive_cot.jsonl"
   contrastive_file: "sft_contrastive_pairs.jsonl"
 
+# ── Mitigation Arms Hyperparameters ─────────────────────────────────
+
+# M2: Vanilla SFT (CoT QLoRA)
 qlora:
   r: 16
   alpha: 32
@@ -66,6 +70,42 @@ qlora:
   vanilla_output_dir: "checkpoints/qlora_vanilla_adapter"
   contrastive_output_dir: "checkpoints/qlora_contrastive_adapter"
 
+# M3: Contrastive SFT / DPO (Arm 2)
+contrastive_dpo:
+  beta: 0.1
+  learning_rate: 5.0e-5
+  lr_scheduler_type: "cosine"
+  batch_size: 2
+  gradient_accumulation_steps: 8
+  epochs: 3
+  warmup_ratio: 0.05
+  output_dir: "checkpoints/qlora_contrastive_adapter"
+
+# M4: Standard GRPO (Ablation Baseline)
+standard_grpo:
+  group_size: 4
+  kl_coef: 0.05
+  learning_rate: 1.0e-5
+  training_steps: 500
+  eval_every_steps: 50
+  batch_size: 1
+  sandbox_timeout: 3.0
+  output_dir: "checkpoints/standard_grpo_final"
+
+# M5: AST-Guided Policy Optimization (Arm 3)
+ast_rl:
+  group_size: 4
+  kl_coef: 0.05
+  learning_rate: 1.0e-5
+  training_steps: 500
+  eval_every_steps: 50
+  batch_size: 1
+  sandbox_timeout: 3.0
+  sim_ast_weight: 0.4
+  outcome_weight: 0.6
+  output_dir: "checkpoints/rlvr_ast_final"
+
+# M6: Invariance-Regularized GRPO (Arm 1 — Primary Contribution)
 inv_grpo:
   group_size: 4
   kl_coef: 0.1
@@ -76,3 +116,14 @@ inv_grpo:
   batch_size: 1
   learning_rate: 1.0e-5
   output_dir: "checkpoints/inv_grpo_final"
+
+# M7: Step-RLVR Process Reward (Arm 4)
+step_rlvr:
+  group_size: 4
+  kl_coef: 0.05
+  learning_rate: 1.0e-5
+  training_steps: 500
+  eval_every_steps: 50
+  batch_size: 1
+  sandbox_timeout: 3.0
+  output_dir: "checkpoints/step_rlvr_final"
