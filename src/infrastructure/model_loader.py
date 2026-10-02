@@ -152,12 +152,13 @@ class QuantizedModelRunner(IModelRunner):
             # Left-pad so all sequences have the same length for batched generation
             original_padding_side = self.tokenizer.padding_side
             self.tokenizer.padding_side = "left"
+            target_device = getattr(self.model, "device", None) or next(self.model.parameters()).device
             inputs = self.tokenizer(
                 formatted,
                 return_tensors="pt",
                 padding=True,
                 truncation=False,
-            ).to(self.model.device)
+            ).to(target_device)
             self.tokenizer.padding_side = original_padding_side
 
             # Each prompt's generated tokens start after its own input length.
@@ -165,11 +166,20 @@ class QuantizedModelRunner(IModelRunner):
             # can read input_len once from the batch dimension.
             padded_input_len = inputs["input_ids"].shape[1]
 
+            eos_token_ids = [self.tokenizer.eos_token_id]
+            for special in ["<|im_end|>", "<|endoftext|>"]:
+                try:
+                    tok_id = self.tokenizer.convert_tokens_to_ids(special)
+                    if tok_id is not None and isinstance(tok_id, int) and tok_id not in eos_token_ids:
+                        eos_token_ids.append(tok_id)
+                except Exception:
+                    pass
+
             gen_kwargs = {
                 "max_new_tokens": max_new_tokens,
                 "do_sample": do_sample,
                 "pad_token_id": self.tokenizer.pad_token_id,
-                "eos_token_id": self.tokenizer.eos_token_id,
+                "eos_token_id": eos_token_ids,
             }
             if do_sample:
                 gen_kwargs["temperature"] = max(temperature, 0.01)

@@ -74,12 +74,18 @@ class EvaluationSuite:
         classifier=None,
         evaluate_pass5: bool = True,
         timeout_seconds: float = 10.0,
+        batch_size: int = 16,
+        max_new_tokens: int = 512,
+        max_tasks_per_level: Optional[int] = None,
     ) -> None:
         self.registry = registry
         self.executor = executor or MultiprocessSandbox()
         self.classifier = classifier or RuleBasedErrorClassifier()
         self.evaluate_pass5 = evaluate_pass5
         self.timeout_seconds = timeout_seconds
+        self.batch_size = batch_size
+        self.max_new_tokens = max_new_tokens
+        self.max_tasks_per_level = max_tasks_per_level
 
     # ------------------------------------------------------------------
     # Public API
@@ -109,9 +115,12 @@ class EvaluationSuite:
         """
         print(f"\n{'='*60}")
         print(f"[EvaluationSuite] Evaluating: {model_id}")
-        print(f"  Base model  : {model_name_or_path}")
-        print(f"  Adapter     : {adapter_path or 'None (base model)'}")
-        print(f"  Pass@5      : {self.evaluate_pass5}")
+        print(f"  Base model       : {model_name_or_path}")
+        print(f"  Adapter          : {adapter_path or 'None (base model)'}")
+        print(f"  Batch size       : {self.batch_size}")
+        print(f"  Max new tokens   : {self.max_new_tokens}")
+        print(f"  Max tasks/level  : {self.max_tasks_per_level or 'All'}")
+        print(f"  Pass@5           : {self.evaluate_pass5}")
         print(f"{'='*60}\n")
 
         # Lazy import — avoids importing torch/transformers when just loading metrics
@@ -132,6 +141,8 @@ class EvaluationSuite:
             if not tasks:
                 print(f"[SKIP] {level_key}: no tasks available")
                 continue
+            if self.max_tasks_per_level is not None and len(tasks) > self.max_tasks_per_level:
+                tasks = tasks[: self.max_tasks_per_level]
             level_report = self._evaluate_level(runner, tasks, level_key)
             suite_report.level_reports[level_key] = level_report
 
@@ -163,77 +174,105 @@ class EvaluationSuite:
         tasks: List[BenchmarkTask],
         level_key: str,
     ) -> LevelEvaluationReport:
-        """Evaluate one ladder level and return a LevelEvaluationReport."""
+        """Evaluate one ladder level with batched generation and parallel sandbox execution."""
         from tqdm import tqdm
+        from concurrent.futures import ThreadPoolExecutor
 
-        print(f"\n[LEVEL] {level_key}  ({len(tasks)} tasks)")
+        batch_size = max(1, getattr(self, "batch_size", 16))
+        max_new_tokens = getattr(self, "max_new_tokens", 512)
+
+        print(f"\n[LEVEL] {level_key}  ({len(tasks)} tasks | batch_size={batch_size})")
         passed_p1 = 0
         p5_pass_counts: List[int] = []
         error_counts: Dict[str, int] = {}
         task_records = []
         total_tokens = 0.0
 
-        for task in tqdm(tasks, desc=f"  {level_key}", leave=False):
-            # ── Greedy Pass@1 ─────────────────────────────────────────
-            p1_completions = runner.generate(
-                prompt=task.prompt,
-                temperature=0.0,
-                num_samples=1,
-                max_new_tokens=1024,
-            )
-            p1_code = p1_completions[0] if p1_completions else ""
-            p1_exec = self.executor.execute(
-                prompt=task.prompt,
-                solution=p1_code,
-                test=task.test,
-                entry_point=task.entry_point,
-                timeout_seconds=self.timeout_seconds,
-            )
-            p1_category = self.classifier.classify(task, p1_code, p1_exec)
-            error_counts[p1_category] = error_counts.get(p1_category, 0) + 1
-            if p1_exec.passed:
-                passed_p1 += 1
+        with tqdm(total=len(tasks), desc=f"  {level_key}", leave=False) as pbar:
+            for i in range(0, len(tasks), batch_size):
+                batch_tasks = tasks[i : i + batch_size]
+                batch_prompts = [t.prompt for t in batch_tasks]
 
-            token_len = len(p1_code.split())
-            total_tokens += token_len
+                # ── Batched Greedy Pass@1 Generation ──────────────────
+                if hasattr(runner, "generate_batch"):
+                    batch_completions = runner.generate_batch(
+                        prompts=batch_prompts,
+                        temperature=0.0,
+                        num_samples=1,
+                        max_new_tokens=max_new_tokens,
+                    )
+                else:
+                    batch_completions = [
+                        runner.generate(prompt=p, temperature=0.0, num_samples=1, max_new_tokens=max_new_tokens)
+                        for p in batch_prompts
+                    ]
 
-            record: Dict[str, Any] = {
-                "task_id": task.task_id,
-                "p1_passed": p1_exec.passed,
-                "p1_status": p1_exec.status,
-                "p1_error_category": p1_category,
-                "p1_code": p1_code,
-                "p1_error_message": p1_exec.error_message,
-                "p1_time": p1_exec.execution_time_seconds,
-                "approx_tokens": token_len,
-            }
-
-            # ── Sampled Pass@5 ────────────────────────────────────────
-            if self.evaluate_pass5:
-                p5_completions = runner.generate(
-                    prompt=task.prompt,
-                    temperature=0.8,
-                    num_samples=5,
-                    max_new_tokens=1024,
-                )
-                n_passed = 0
-                p5_samples = []
-                for idx, code in enumerate(p5_completions):
-                    res = self.executor.execute(
-                        prompt=task.prompt,
+                # ── Parallel Sandbox Execution ────────────────────────
+                def _run_single_task(task_obj, comp_list):
+                    code = comp_list[0] if comp_list else ""
+                    exec_res = self.executor.execute(
+                        prompt=task_obj.prompt,
                         solution=code,
-                        test=task.test,
-                        entry_point=task.entry_point,
+                        test=task_obj.test,
+                        entry_point=task_obj.entry_point,
                         timeout_seconds=self.timeout_seconds,
                     )
-                    if res.passed:
-                        n_passed += 1
-                    p5_samples.append({"sample_idx": idx, "passed": res.passed, "status": res.status})
-                p5_pass_counts.append(n_passed)
-                record["p5_n_passed"] = n_passed
-                record["p5_samples"] = p5_samples
+                    cat = self.classifier.classify(task_obj, code, exec_res)
+                    return code, exec_res, cat
 
-            task_records.append(record)
+                num_workers = min(4, len(batch_tasks))
+                with ThreadPoolExecutor(max_workers=num_workers) as pool:
+                    exec_results = list(pool.map(
+                        lambda pair: _run_single_task(pair[0], pair[1]),
+                        zip(batch_tasks, batch_completions)
+                    ))
+
+                for task_obj, (p1_code, p1_exec, p1_category) in zip(batch_tasks, exec_results):
+                    error_counts[p1_category] = error_counts.get(p1_category, 0) + 1
+                    if p1_exec.passed:
+                        passed_p1 += 1
+
+                    token_len = len(p1_code.split())
+                    total_tokens += token_len
+
+                    record: Dict[str, Any] = {
+                        "task_id": task_obj.task_id,
+                        "p1_passed": p1_exec.passed,
+                        "p1_status": p1_exec.status,
+                        "p1_error_category": p1_category,
+                        "p1_code": p1_code,
+                        "p1_error_message": p1_exec.error_message,
+                        "p1_time": p1_exec.execution_time_seconds,
+                        "approx_tokens": token_len,
+                    }
+
+                    # Optional Pass@5 (runs only when explicitly requested)
+                    if self.evaluate_pass5:
+                        p5_completions = runner.generate(
+                            prompt=task_obj.prompt,
+                            temperature=0.8,
+                            num_samples=5,
+                            max_new_tokens=max_new_tokens,
+                        )
+                        n_passed = 0
+                        p5_samples = []
+                        for idx, code in enumerate(p5_completions):
+                            res = self.executor.execute(
+                                prompt=task_obj.prompt,
+                                solution=code,
+                                test=task_obj.test,
+                                entry_point=task_obj.entry_point,
+                                timeout_seconds=self.timeout_seconds,
+                            )
+                            if res.passed:
+                                n_passed += 1
+                            p5_samples.append({"sample_idx": idx, "passed": res.passed, "status": res.status})
+                        p5_pass_counts.append(n_passed)
+                        record["p5_n_passed"] = n_passed
+                        record["p5_samples"] = p5_samples
+
+                    task_records.append(record)
+                    pbar.update(1)
 
         total = len(tasks)
         pass_at_1 = passed_p1 / total if total > 0 else 0.0
