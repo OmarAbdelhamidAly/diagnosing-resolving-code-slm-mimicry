@@ -69,6 +69,7 @@ Thumbs.db
 
 # Proposal / confidential research reports
 proposal/
+paper/
 *.pdf
 PROFILE_README.md
 WORKFLOW.md
