@@ -149,6 +149,12 @@ class SubprocessSandbox(ICodeExecutor):
         target_indent = base_indent + 4
 
         body_lines = body.splitlines()
+        # Drop leading and trailing empty lines to reliably inspect indentation of first code line
+        while body_lines and not body_lines[0].strip():
+            body_lines.pop(0)
+        while body_lines and not body_lines[-1].strip():
+            body_lines.pop()
+
         non_empty = [ln for ln in body_lines if ln.strip()]
         if not non_empty:
             return body
@@ -157,16 +163,16 @@ class SubprocessSandbox(ICodeExecutor):
         shift = target_indent - first_indent
 
         if shift == 0:
-            return body
+            return "\n".join(body_lines)
         elif shift > 0:
             shift_str = " " * shift
-            return "\n".join(shift_str + ln if ln.strip() else ln for ln in body_lines)
+            return "\n".join(shift_str + ln if ln.strip() else "" for ln in body_lines)
         else:
             abs_shift = abs(shift)
             can_unindent = all((len(ln) - len(ln.lstrip())) >= abs_shift for ln in non_empty)
             if can_unindent:
-                return "\n".join(ln[abs_shift:] if ln.strip() else ln for ln in body_lines)
-            return body
+                return "\n".join(ln[abs_shift:] if ln.strip() else "" for ln in body_lines)
+            return "\n".join(body_lines)
 
     def execute(
         self,
@@ -180,7 +186,8 @@ class SubprocessSandbox(ICodeExecutor):
 
         # Strip any CoT reasoning block (<thought>...</thought>) that SFT/RL
         # models may emit before the actual code block.
-        clean_solution = _re.sub(r"<thought>.*?</thought>", "", solution, flags=_re.DOTALL).strip()
+        # Strip leading and trailing newlines, but preserve relative indentation of the first line.
+        clean_solution = _re.sub(r"<thought>.*?</thought>", "", solution, flags=_re.DOTALL).strip("\r\n").rstrip()
 
         # Sanitize prompt signatures with invalid ellipsis (e.g. def foo(...):)
         sanitized_prompt = _re.sub(r'def\s+(\w+)\s*\(\s*\.\.\.\s*\)\s*:', r'def \1(*args, **kwargs):', prompt)

@@ -13,6 +13,7 @@ enforcing rigorous control-flow logic and structural correctness.
 
 import ast
 import math
+import textwrap
 from typing import List, Set
 
 
@@ -34,13 +35,30 @@ def get_ast_signature(code: str) -> List[str]:
     """Returns depth-first sequence of normalized AST node type names.
 
     Gracefully catches SyntaxErrors (returns ['SyntaxError']).
+    Supports indented code blocks and function body fragments by dedenting
+    or wrapping within a temporary function scope.
     """
+    if not code or not code.strip():
+        return []
+
+    parsed = None
+    for attempt in [
+        code,
+        textwrap.dedent(code),
+        f"def _ast_wrapper():\n{textwrap.indent(textwrap.dedent(code), '    ')}",
+    ]:
+        try:
+            parsed = ast.parse(attempt)
+            break
+        except Exception:
+            continue
+
+    if parsed is None:
+        return ["SyntaxError"]
+
     try:
-        parsed = ast.parse(code)
         normalized = ASTNormalizer().visit(parsed)
         return [type(node).__name__ for node in ast.walk(normalized)]
-    except SyntaxError:
-        return ["SyntaxError"]
     except Exception:
         return ["SyntaxError"]
 
