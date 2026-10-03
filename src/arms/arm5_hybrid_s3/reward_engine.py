@@ -19,8 +19,8 @@ from typing import Dict, Any, List, Optional, Tuple
 
 from src.core.entities import ExecutionResult
 from src.infrastructure.sandbox import SubprocessSandbox
-from src.arms.arm3_ast_rl.ast_engine import simAST, get_ast_signature
-from src.arms.arm4_step_rlvr.verifier import StepwiseContractVerifier, instrument_stepwise_test
+from src.arms.arm5_hybrid_s3.ast_engine import simAST, get_ast_signature
+from src.arms.arm5_hybrid_s3.step_verifier import StepwiseContractVerifier, instrument_stepwise_test
 
 
 def normalize_code_tokens(code: str) -> str:
