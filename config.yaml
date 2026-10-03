@@ -127,3 +127,20 @@ step_rlvr:
   batch_size: 1
   sandbox_timeout: 3.0
   output_dir: "checkpoints/step_rlvr_final"
+
+# M8: S³-GRPO Flagship Hybrid Policy (Arm 5 — Novel Synthesis)
+s3_grpo:
+  group_size: 4
+  kl_coef: 0.05
+  learning_rate: 1.0e-5
+  training_steps: 500
+  eval_every_steps: 50
+  batch_size: 1
+  max_new_tokens: 384
+  sandbox_timeout: 3.0
+  w_step: 0.50
+  w_ast: 0.30
+  w_inv: 0.20
+  w_parsimony: 0.15
+  output_dir: "checkpoints/s3_grpo_final"
+

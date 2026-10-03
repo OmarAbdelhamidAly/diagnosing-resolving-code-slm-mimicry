@@ -68,6 +68,7 @@ def package_checkpoints() -> Path:
         "rlvr_inv_grpo_final",
         "rlvr_ast_final",
         "step_rlvr_final",
+        "s3_grpo_final",
     ]
 
     out_zip = UPLOAD_DIR / "slm_checkpoints.zip"
