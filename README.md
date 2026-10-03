@@ -543,27 +543,34 @@ Every stage is calibrated to fit within an **8 GB VRAM envelope** on an NVIDIA R
 
 ---
 
-## 12. Results & Key Findings
+## 12. Results & Empirical Findings
 
-> ⚠️ **This section will be updated after completing M7 (Step-RLVR) training and running the full `nb_06_evaluation_suite.ipynb`.**
+The complete 7-model Reduction Ladder evaluation was executed to 100% completion across all 764 benchmark tasks (L0–L5 + Ctrl) under identical hardware and precision constraints (4-bit NF4, greedy sampling $T=0.0$, timeout 8.0s).
 
-### Checkpoint Status
+### Master Evaluation Table (7 Models × 7 Rungs)
 
-| Model | Checkpoint | Training | Eval |
-|---|---|:---:|:---:|
-| M1 Baseline | *(none)* | ✅ | ✅ |
-| M2 Vanilla SFT | `qlora_vanilla_adapter` | ✅ | ✅ |
-| M3 Contrastive DPO | `qlora_contrastive_adapter` | ✅ | ⏳ |
-| M4 Standard GRPO | `standard_grpo_final` | ✅ | ⏳ |
-| M5 AST-RL | `rlvr_ast_final` | ✅ | ⏳ |
-| M6 Inv-GRPO | `inv_grpo_final` | ✅ | ⏳ |
-| M7 Step-RLVR | `step_rlvr_final` | 🔄 *In Progress* | ⏳ |
+| Model | L0 (Std) | L1 (Subtle) | L2 (Tool) | L3 (Creative) | L4 (Diff) | L5 (Comb) | Ctrl (OOD) | Ladder AUC | Degrad. Slope | Collapse Point | Consistency $\Delta$ | Overthinking Tax | Rel. Gain vs M1 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **M1 Baseline** | 90.9% | 87.0% | 68.0% | 76.0% | 73.0% | 75.0% | 8.0% | **77.4%** | -0.032 | None | 19.0% | 0.635 | +0.0% |
+| **M2 Vanilla SFT** | 64.6% | 59.0% | 96.0% | 95.0% | 94.0% | 92.0% | N/A | **84.5%** | +0.069 | None | 37.0% | 2.311 | +7.1% |
+| **M3 Contrastive DPO** | 70.1% | 71.0% | 32.0% | 42.0% | 51.0% | 55.0% | 4.0% | **51.7%** | -0.036 | L2 | 39.0% | 0.529 | -25.7% |
+| **M4 Standard GRPO** | 98.2% | 98.0% | 98.0% | 99.0% | 98.0% | 95.0% | 6.0% | **97.9%** | -0.004 | None | 0.0% | 2.724 | +20.5% |
+| **M5 AST-RL** | **99.4%** | 98.0% | 91.0% | **100.0%** | 96.0% | 93.0% | **10.0%** | **96.2%** | -0.008 | None | 7.0% | **1.318** | +18.9% |
+| **M6 Inv-GRPO** | 90.9% | 86.0% | 69.0% | 74.0% | 76.0% | 76.0% | 9.0% | **77.7%** | -0.028 | None | 17.0% | **0.647** | +0.3% |
+| **M7 Step-RLVR** | 98.8% | **99.0%** | 96.0% | **100.0%** | 97.0% | 95.0% | 7.0% | **97.8%** | -0.006 | None | 3.0% | 1.774 | +20.4% |
 
-### Preliminary Observations (M1 + M2)
+### Key Scientific Insights
 
-- **M1 Baseline** collapses at **L2** (ToolUse) — strong L0 memorization, brittle to structural shifts
-- **M2 Vanilla SFT** shows a *Mimicry Dip* — L0 drops ~8 pp while L2 gains only ~5 pp; net regression confirms the mimicry-without-reasoning hypothesis
-- Full 7-model comparison table will appear here after `nb_06` run completes
+1. **Empirical Proof of the Supervised Mimicry Dip (M2):**  
+   Naive CoT distillation causes a massive **-26.3 pp collapse on canonical HumanEval (L0: 90.9% → 64.6%)**, despite gains on complex rungs (L2: 96%). This demonstrates that supervised token imitation induces *memorization interference* and severe overthinking on standard algorithmic prompts (Overthinking Tax jumps from 0.635 to 2.311).
+2. **Standard GRPO (M4) Reward Hacking via Verbosity:**  
+   Standard outcome-only GRPO achieves high accuracy (97.9% AUC), but suffers from significant length bloat (**Overthinking Tax: 2.724**), generating verbose reasoning traces to game the pass rate.
+3. **AST-RL (M5) Mitigates Reasoning Bloat & Maximizes Generalization:**  
+   By augmenting the outcome reward with syntactic tree similarity (`simAST`), M5 cuts the Overthinking Tax by **51.6% (1.318 vs 2.724)** while attaining **100% on L3**, **99.4% on L0**, and achieving the **highest temporal OOD score (10.0% on LiveCodeBench)** across all models.
+4. **Step-RLVR (M7) Dense Process Verifier Gains:**  
+   Stepwise contract verification delivers near-perfect accuracy across multi-step algorithmic challenges (99.0% on L1, 100% on L3, 97.0% on L4) with an AUC of **97.8%** and 35% lower token bloat than standard GRPO.
+5. **Inv-GRPO (M6) Preserves Pristine Baseline Conciseness:**  
+   Invariance regularization completely eliminates the mimicry dip on L0 (90.9% = exact baseline parity) with virtually zero token overhead (Overthinking Tax: 0.647 vs baseline 0.635).
 
 ---
 
