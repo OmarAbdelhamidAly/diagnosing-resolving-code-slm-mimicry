@@ -77,38 +77,41 @@ $$\mathcal{L}_{S^3\text{-GRPO}}(\theta) = -\frac{1}{G} \sum_{i=1}^G \left[ \min\
 
 ### 3.2 Composite Multi-Objective Reward Function
 For rollout $\hat{y}_i \sim \pi_{\text{old}}(\cdot \mid x)$ evaluated against canonical reference $y^*$:
+### Composite Multi-Objective Reward Function (SEGO Formulation)
+For rollout $\hat{y}_i \sim \pi_{\text{old}}(\cdot \mid x)$ evaluated against canonical reference $y^*$:
 
-$$\mathcal{R}_{\text{total}}(\hat{y}_i, x) = w_{\text{step}} \cdot \mathcal{R}_{\text{step}}(\hat{y}_i) + w_{\text{ast}} \cdot \text{sim}_{\text{AST}}(\hat{y}_i, y^*) - w_{\text{inv}} \cdot \mathcal{L}_{\text{inv}}(x, x') - w_{\text{tax}} \cdot \Omega_{\text{parsimony}}(\hat{y}_i, y^*)$$
+$$\mathcal{R}_{\text{SEGO}}(\hat{y}_i, x) = \begin{cases} 0.0, & \text{if } \mathcal{R}_{\text{step}}(\hat{y}_i) = 0 \\ \max\left(0, \mathcal{R}_{\text{step}}(\hat{y}_i) \cdot \left[1.0 + \alpha \cdot \text{sim}_{\text{AST}}(\hat{y}_i, y^*) - \gamma \cdot \Omega_{\text{AST}}(\hat{y}_i, y^*)\right] - \lambda \cdot \mathcal{L}_{\text{inv}}(x, x')\right), & \text{if } \mathcal{R}_{\text{step}}(\hat{y}_i) > 0 \end{cases}$$
 
-#### 1. Stepwise Contract Process Reward ($\mathcal{R}_{\text{step}}$)
-Let $\mathcal{A} = \{a_1, a_2, \dots, a_K\}$ be the set of $K$ isolated test assertions for task $x$. Each assertion is executed in a fortified sandbox subprocess:
+#### 1. Execution-Gated Process Credit ($\mathcal{R}_{\text{step}}$)
+Let $\mathcal{A} = \{a_1, a_2, \dots, a_K\}$ be the set of $K$ isolated test assertions for task $x$. Evaluated via subprocess sandbox:
 $$\mathcal{R}_{\text{step}}(\hat{y}_i) = \frac{1}{K} \sum_{k=1}^K \mathbb{I}\left[\text{SandboxExec}(\hat{y}_i \cup a_k) = \text{PASS}\right] \in [0, 1]$$
+> **Core Principle (Yeo et al., 2025):** If $\mathcal{R}_{\text{step}} = 0$, the penalty is zeroed. Length regularizers must **never** punish exploration on failing code, completely avoiding *premature disengagement* ("fast and wrong" failure mode).
 
-#### 2. Normalized AST Structural Similarity ($\text{sim}_{\text{AST}}$)
-Let $\mathcal{T}(\cdot)$ denote the Abstract Syntax Tree parser with identifier anonymization ($\alpha$-equivalence). We compute the weighted blend of node-type multiset Jaccard similarity and tree size ratio:
+#### 2. Syntactic Tree Structural Fidelity ($\text{sim}_{\text{AST}}$)
+Let $\mathcal{T}(\cdot)$ denote the normalized Abstract Syntax Tree with identifier anonymization ($\alpha$-equivalence):
 $$\text{sim}_{\text{AST}}(\hat{y}_i, y^*) = 0.6 \cdot \frac{|\mathcal{T}(\hat{y}_i) \cap \mathcal{T}(y^*)|}{|\mathcal{T}(\hat{y}_i) \cup \mathcal{T}(y^*)|} + 0.4 \cdot \frac{\min(|\mathcal{T}(\hat{y}_i)|, |\mathcal{T}(y^*)|)}{\max(|\mathcal{T}(\hat{y}_i)|, |\mathcal{T}(y^*)|)} \in [0, 1]$$
 
-#### 3. Cross-Prompt Invariance Regularizer ($\mathcal{L}_{\text{inv}}$)
+#### 3. Syntactic Tree Bloat Penalty ($\Omega_{\text{AST}}$) — *Our Core Innovation*
+Rather than penalizing flat surface characters (like LUSPO or GRPO-LEAD), we penalize AST structural node explosion relative to the canonical algorithm:
+$$\Omega_{\text{AST}}(\hat{y}_i, y^*) = \min\left(1.0, \, \max\left(0, \frac{|\text{Nodes}(\mathcal{T}_{\hat{y}_i})| - |\text{Nodes}(\mathcal{T}_{y^*})|}{|\text{Nodes}(\mathcal{T}_{y^*})|}\right)\right)$$
+
+#### 4. Cross-Prompt Invariance Regularizer ($\mathcal{L}_{\text{inv}}$)
 For paired semantic variants $(x, x')$ where $x'$ introduces superficial docstring, variable, or signature changes:
 $$\mathcal{L}_{\text{inv}}(x, x') = \left| \mathcal{R}_{\text{step}}(\hat{y}_i \mid x) - \mathcal{R}_{\text{step}}(\hat{y}_i' \mid x') \right|$$
 
-#### 4. Information-Theoretic Parsimony Tax ($\Omega_{\text{parsimony}}$)
-To penalize verbosity hacking and reward concise, exact reasoning:
-$$\Omega_{\text{parsimony}}(\hat{y}_i, y^*) = \min\left(1.0, \, \max\left(0, \frac{|\text{Tokens}(\hat{y}_i)| - |\text{Tokens}(y^*)|}{|\text{Tokens}(y^*)|}\right)\right)$$
-
 #### 5. Group-Normalized Advantage ($\hat{A}_i$)
-$$\hat{A}_i = \frac{\mathcal{R}_{\text{total}}(\hat{y}_i) - \mu_{\mathcal{R}}}{\sigma_{\mathcal{R}} + 10^{-6}}, \quad \text{where } \mu_{\mathcal{R}} = \frac{1}{G}\sum_{j=1}^G \mathcal{R}_{\text{total}}(\hat{y}_j), \; \sigma_{\mathcal{R}} = \sqrt{\frac{1}{G}\sum_{j=1}^G (\mathcal{R}_{\text{total}}(\hat{y}_j) - \mu_{\mathcal{R}})^2}$$
+$$\hat{A}_i = \frac{\mathcal{R}_{\text{SEGO}}(\hat{y}_i) - \mu_{\mathcal{R}}}{\sigma_{\mathcal{R}} + 10^{-6}}, \quad \text{where } \mu_{\mathcal{R}} = \frac{1}{G}\sum_{j=1}^G \mathcal{R}_{\text{SEGO}}(\hat{y}_j), \; \sigma_{\mathcal{R}} = \sqrt{\frac{1}{G}\sum_{j=1}^G (\mathcal{R}_{\text{SEGO}}(\hat{y}_j) - \mu_{\mathcal{R}})^2}$$
 
 ---
 
-## 4. Algorithm Pseudocode ($S^3$-GRPO)
+## 4. Algorithm Pseudocode (SEGO-GRPO)
 
 ```python
 """
-Algorithm 1: S³-GRPO (Structural, Stepwise & Invariant Policy Optimization)
+Algorithm 1: SEGO-GRPO (Syntactic-Execution Gated Policy Optimization)
 =============================================================================
 Input: Initial policy π_θ, Reference policy π_ref, Dataset D = {(x, x', y*, A)}
-Hyperparameters: G=4 rollouts, LR=1e-5, ε=0.2, β_KL=0.04, weights w_step, w_ast, w_inv, w_tax
+Hyperparameters: G=4 rollouts, LR=1e-5, ε=0.2, β_KL=0.04, α=0.30, γ=0.20, λ=0.15
 """
 for step in range(1, NUM_STEPS + 1):
     batch = sample_batch(D)
@@ -118,18 +121,22 @@ for step in range(1, NUM_STEPS + 1):
             rollouts = [sample_policy(π_θ, x, max_tokens=384, temp=0.8) for _ in range(G)]
             rollout_prime = sample_policy(π_θ, x_prime, max_tokens=384, temp=0.8)
         
-        # 2. Multi-Objective Reward Evaluation
+        # 2. SEGO Reward Evaluation (Execution-Gated AST Modulation)
         R_total = []
         for y_hat in rollouts:
             r_step = evaluate_stepwise_assertions(y_hat, assertions)  # [0, 1]
-            r_ast = compute_ast_similarity(y_hat, y_star)             # [0, 1]
-            r_inv = abs(r_step - evaluate_stepwise_assertions(rollout_prime, assertions))
-            r_tax = max(0.0, (len_tokens(y_hat) - len_tokens(y_star)) / len_tokens(y_star))
-            r_tax = min(1.0, r_tax)
-            
-            # Composite Scalar
-            r = (w_step * r_step) + (w_ast * r_ast) - (w_inv * r_inv) - (w_tax * r_tax)
-            R_total.append(r)
+            if r_step <= 0.0:
+                # Gated: Zero penalty on failure to allow free exploration (Yeo et al. 2025)
+                r_sego = 0.0
+            else:
+                r_ast = compute_ast_similarity(y_hat, y_star)             # [0, 1]
+                omega_ast = max(0.0, (len_ast_nodes(y_hat) - len_ast_nodes(y_star)) / len_ast_nodes(y_star))
+                r_inv = abs(r_step - evaluate_stepwise_assertions(rollout_prime, assertions))
+                
+                # Modulated structural credit
+                mult = max(0.5, min(1.0 + (α * r_ast) - (γ * omega_ast), 1.5))
+                r_sego = max(0.0, (r_step * mult) - (λ * r_inv))
+            R_total.append(r_sego)
         
         # 3. Advantage Normalization
         mean_R = mean(R_total)

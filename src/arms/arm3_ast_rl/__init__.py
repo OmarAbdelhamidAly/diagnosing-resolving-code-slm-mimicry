@@ -5,7 +5,14 @@ from src.arms.arm3_ast_rl.ast_engine import (
     ast_reward,
 )
 from src.arms.arm3_ast_rl.reward_engine import ASTRewardEngine
-from src.arms.arm3_ast_rl.trainer import ASTRLTrainer
+
+
+def __getattr__(name: str):
+    if name == "ASTRLTrainer":
+        from src.arms.arm3_ast_rl.trainer import ASTRLTrainer
+        return ASTRLTrainer
+    raise AttributeError(f"module 'src.arms.arm3_ast_rl' has no attribute '{name}'")
+
 
 __all__ = [
     "ASTNormalizer",

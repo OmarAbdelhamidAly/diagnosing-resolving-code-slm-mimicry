@@ -269,7 +269,7 @@ class S3GRPOTrainer:
                 rewards.append(r_dict["r_total"])
                 step_rewards.append(r_dict["r_step"])
                 ast_sims.append(r_dict["r_ast"])
-                parsimony_pens.append(r_dict["p_parsimony"])
+                parsimony_pens.append(r_dict.get("omega_ast", r_dict.get("p_parsimony", 0.0)))
                 pass_flags.append(1.0 if r_dict["all_passed"] else 0.0)
 
             # 3. Compute GRPO Relative Advantages across group G

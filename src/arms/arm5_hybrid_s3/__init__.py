@@ -5,6 +5,13 @@ and cross-prompt invariance to eliminate reasoning bloat and supervised mimicry.
 """
 
 from src.arms.arm5_hybrid_s3.reward_engine import S3RewardEngine
-from src.arms.arm5_hybrid_s3.trainer import S3GRPOTrainer
+
+
+def __getattr__(name: str):
+    if name == "S3GRPOTrainer":
+        from src.arms.arm5_hybrid_s3.trainer import S3GRPOTrainer
+        return S3GRPOTrainer
+    raise AttributeError(f"module 'src.arms.arm5_hybrid_s3' has no attribute '{name}'")
+
 
 __all__ = ["S3RewardEngine", "S3GRPOTrainer"]
