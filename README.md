@@ -281,14 +281,14 @@ $$R_{\text{stepwise}}(y) = \sum_{k=1}^{S} \frac{1}{S}\cdot s_k, \quad s_k\in\{0,
 
 > **Why it matters:** A completion passing 8/10 assertions gets `R = 0.80` vs. `R = 0.0` with binary RLVR — **16× more gradient signal** on complex L4/L5 tasks.
 
-### Arm 5 — S³-GRPO (M8 — Flagship Novel Hybrid) ⭐
+### Arm 5 — SEGO-GRPO (M8 — Flagship Novel Contribution) ⭐
 
 **Full Specification & Derivations:** See dedicated [`src/arms/arm5_hybrid_s3/README.md`](src/arms/arm5_hybrid_s3/README.md)  
-**Notebook:** [`notebooks/arm_05_hybrid_s3.ipynb`](notebooks/arm_05_hybrid_s3.ipynb) · **CLI Runner:** [`scripts/train_arm5_s3.py`](scripts/train_arm5_s3.py)
+**Notebook:** [`notebooks/arm_05_sego_grpo.ipynb`](notebooks/arm_05_sego_grpo.ipynb) · **CLI Runner:** [`scripts/train_arm5_s3.py`](scripts/train_arm5_s3.py)
 
-$$\mathcal{R}_{\text{total}}(\hat{y}_i, x) = w_{\text{step}} \cdot \mathcal{R}_{\text{step}}(\hat{y}_i) + w_{\text{ast}} \cdot \text{sim}_{\text{AST}}(\hat{y}_i, y^*) - w_{\text{inv}} \cdot \mathcal{L}_{\text{inv}}(x, x') - w_{\text{tax}} \cdot \Omega_{\text{parsimony}}(\hat{y}_i, y^*)$$
+$$\mathcal{R}_{\text{SEGO}}(y, x) = \mathcal{R}_{\text{step}}(y) \cdot \Big[ 1 + \alpha \cdot \text{sim}_{\text{AST}}(y, y^*) - \gamma \cdot \Omega_{\text{AST}}(y, y^*) \Big] - \lambda \cdot \mathcal{L}_{\text{inv}}(x, x')$$
 
-> **Why it matters:** Standard GRPO hacks rewards through verbosity (`Overthinking Tax = 2.724`). $S^3$-GRPO synergizes dense unit assertion credits from Step-RLVR and tree isomorphism from AST-RL while penalizing runaway reasoning length via $\Omega_{\text{parsimony}}$, reaching the Pareto frontier of accuracy, conciseness, and OOD generalization.
+> **Why it matters:** Standard GRPO hacks rewards through verbosity (`Overthinking Tax = 2.724`). SEGO-GRPO introduces execution-gated syntactic tree parsimony, eliminating runaway reasoning length without triggering premature disengagement, reaching the Pareto frontier of accuracy and OOD generalization.
 
 ---
 
@@ -410,7 +410,7 @@ diagnosing-resolving-code-slm-mimicry/
 │   ├── arm_02_contrastive_sft.ipynb # Arm 2: Contrastive DPO (M3)
 │   ├── arm_03_ast_rl.ipynb          # Arm 3: AST-RL (M5)
 │   ├── arm_04_step_rlvr.ipynb       # Arm 4: Step-RLVR (M7)
-│   └── arm_05_hybrid_s3.ipynb       # Arm 5: S³-GRPO Flagship Training (M8) ⭐
+│   └── arm_05_sego_grpo.ipynb       # Arm 5: SEGO-GRPO Flagship Training (M8) ⭐
 │
 ├── scripts/
 │   ├── train_arm4.py               # Standalone Step-RLVR trainer (GPU)
@@ -531,7 +531,7 @@ python scripts/prepare_kaggle_upload.py
 | [`arm_02_contrastive_sft.ipynb`](notebooks/arm_02_contrastive_sft.ipynb) | Arm 2 — M3 | DPO training on hard-negative contrastive pairs |
 | [`arm_03_ast_rl.ipynb`](notebooks/arm_03_ast_rl.ipynb) | Arm 3 — M5 | AST-guided policy optimization; simAST reward curves |
 | [`arm_04_step_rlvr.ipynb`](notebooks/arm_04_step_rlvr.ipynb) | Arm 4 — M7 | Step-RLVR; per-assertion reward density visualization |
-| [`arm_05_hybrid_s3.ipynb`](notebooks/arm_05_hybrid_s3.ipynb) ⭐ | **Arm 5 — M8 (Flagship)** | **S³-GRPO Flagship Hybrid training (Stepwise + AST + Parsimony)** |
+| [`arm_05_sego_grpo.ipynb`](notebooks/arm_05_sego_grpo.ipynb) ⭐ | **Arm 5 — M8 (Flagship)** | **SEGO-GRPO Training (Stepwise + AST Parsimony + Gated RL)** |
 
 ### Kaggle GPU Workflow (Recommended for Full Evaluation)
 

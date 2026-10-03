@@ -183,29 +183,30 @@ In strict accordance with Clean Architecture principles, all domain logic is iso
 
 ```
 src/arms/arm5_hybrid_s3/
-├── __init__.py               # Exports S3RewardEngine and S3GRPOTrainer
-├── reward_engine.py          # 4-component reward calculation, advantage normalization & stats
-├── trainer.py                # S3GRPOTrainer: 4-bit NF4 QLoRA, rollout generation & backprop
+├── __init__.py               # Exports S3RewardEngine and S3GRPOTrainer (lazy GPU imports)
+├── reward_engine.py          # SEGO multi-objective reward engine (AST node bloat & execution gating)
+├── trainer.py                # S3GRPOTrainer: 4-bit NF4 QLoRA, micro-batched rollout policy updates
 └── README.md                 # Complete publication-grade specification (this file)
 
 Supporting Infrastructure:
-├── notebooks/arm_05_hybrid_s3.ipynb  # Interactive training notebook for Kaggle / Local GPU
+├── notebooks/arm_05_sego_grpo.ipynb  # Interactive training notebook for Local RTX 3070 Ti / Kaggle GPU
 ├── scripts/train_arm5_s3.py         # Production CLI runner with argument parsing & logging
-├── config.yaml                      # s3_grpo hyperparameter configuration block
+├── config.yaml                      # Central hyperparameter configuration block
 └── results/master_comparison_table.csv  # 7-model empirical evaluation benchmark data
 ```
 
 ### Component Symbol Index:
-- [`S3RewardEngine`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm5_hybrid_s3/reward_engine.py#L22): Computes $\mathcal{R}_{\text{total}}$ and normalized advantages.
-- [`S3GRPOTrainer`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm5_hybrid_s3/trainer.py#L35): Implements group rollout generation, forward passes, clipping, and checkpoint persistence.
-- [`StepwiseContractVerifier`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm4_step_rlvr/verifier.py#L25): Reused for zero-leakage subprocess assertion execution.
-- [`simAST`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/ast_engine.py#L90): Reused for normalized AST tree matching.
+- [`S3RewardEngine`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm5_hybrid_s3/reward_engine.py#L35): Computes $\mathcal{R}_{\text{SEGO}}$ with execution gating and AST node bloat detection.
+- [`S3GRPOTrainer`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm5_hybrid_s3/trainer.py#L35): Implements group rollout generation ($G=4$), forward passes, clipping, and checkpoint persistence.
+- [`StepwiseContractVerifier`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm4_step_rlvr/verifier.py#L77): Reused for zero-leakage subprocess assertion execution.
+- [`simAST`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/ast_engine.py#L48): Normalized AST tree matching algorithm.
+- [`get_ast_signature`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/ast_engine.py#L33): Computes depth-first sequence of normalized AST node types for true structural bloat calculation.
 
 ---
 
 ## 7. Hyperparameter Calibration & 8 GB VRAM Envelope
 
-Strictly calibrated to run on a single consumer **NVIDIA RTX 3070 (8 GB VRAM)** or a **Kaggle Tesla T4 (16 GB VRAM)**:
+Strictly calibrated to run on a single consumer **NVIDIA RTX 3070 Ti (8 GB VRAM)** or a **Kaggle Tesla T4 (16 GB VRAM)**:
 
 | Parameter | Value | Hardware / Algorithmic Justification |
 |---|:---:|---|
@@ -221,51 +222,99 @@ Strictly calibrated to run on a single consumer **NVIDIA RTX 3070 (8 GB VRAM)** 
 | **Learning Rate** | $1.0 \times 10^{-5}$ | Conservative rate preventing catastrophic policy collapse |
 | **Clipping Parameter $\epsilon$** | 0.20 | Standard PPO/GRPO trust-region clipping |
 | **KL Penalty $\beta_{\text{KL}}$** | 0.04 | Prevents drift from base reference policy |
-| **$w_{\text{step}}$ (Stepwise weight)** | **0.50** | Primary functional correctness credit |
-| **$w_{\text{ast}}$ (AST weight)** | **0.30** | Inductive syntactic control flow bias |
-| **$w_{\text{inv}}$ (Invariance weight)** | **0.20** | Cross-prompt semantic robustness |
-| **$w_{\text{tax}}$ (Parsimony weight)** | **0.15** | Anti-bloat token length regularization |
+| **$\alpha$ (AST Similarity weight)** | **0.30** | Inductive syntactic control flow bias |
+| **$\gamma$ (AST Tree Bloat weight)** | **0.20** | Anti-bloat AST node parsimony regularizer |
+| **$\lambda$ (Invariance weight)** | **0.15** | Cross-prompt semantic robustness penalty |
 | **Total Steps** | 500 steps | Matches M4, M5, M6, M7 training budget for fair comparison |
 
 ---
 
-## 8. Step-by-Step Training & Reproduction Guide
+## 8. Detailed End-to-End Execution Workflow
 
-### Option A: Interactive Kaggle GPU Execution (Recommended)
-1. Open the interactive notebook [`notebooks/arm_05_hybrid_s3.ipynb`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/notebooks/arm_05_hybrid_s3.ipynb).
-2. Upload it to Kaggle with **GPU P100** or **GPU T4 × 2** accelerator enabled.
-3. Execute all cells:
-   - Cell 1: Clones/pulls the latest repository code.
-   - Cell 2: Loads the 4-rung training pool ($L_1, L_3, L_4, L_5$).
-   - Cell 3: Instantiates `S3RewardEngine` and `S3GRPOTrainer` in 4-bit NF4.
-   - Cell 4: Runs the 500-step training loop with real-time loss and reward tracking.
-   - Cell 5: Saves the LoRA adapter to `checkpoints/s3_grpo_final/`.
+This section outlines the exact three-phase lifecycle: from training locally on your laptop's GPU to zero-overhead evaluation and paper artifact generation on Kaggle.
 
-### Option B: Local Command Line Execution (RTX 3070 / Linux / Windows)
-```bash
-# Activate environment
-conda activate slm_mimicry
-
-# Run the dedicated Arm 5 training script
-python scripts/train_arm5_s3.py \
-    --steps 500 \
-    --group-size 4 \
-    --lr 1e-5 \
-    --w-step 0.5 \
-    --w-ast 0.3 \
-    --w-inv 0.2 \
-    --w-tax 0.15 \
-    --output-dir checkpoints/s3_grpo_final
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        END-TO-END REPRODUCIBILITY PIPELINE                             │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                        │
+│  [PHASE 1: LOCAL TRAINING ON LAPTOP]                                                  │
+│   notebooks/arm_05_sego_grpo.ipynb                                                     │
+│   ↳ Select Kernel: `unsloth_env` (RTX 3070 Ti 8GB)                                     │
+│   ↳ Ingests 400 multi-rung tasks (L1, L3, L4, L5) from `data/ladder/`                  │
+│   ↳ Runs 500 steps of SEGO-GRPO (G=4 rollouts per step)                                │
+│   ↳ Outputs LoRA adapter weights to: `checkpoints/s3_grpo_final/` (~75 MB)             │
+│                                                                                        │
+│                                      │                                                 │
+│                                      ▼                                                 │
+│  [PHASE 2: PACKAGING & UPLOAD]                                                        │
+│   ↳ Zip `checkpoints/s3_grpo_final/` or run `python scripts/prepare_kaggle_upload.py`  │
+│   ↳ Upload `s3_grpo_final` as Kaggle Dataset (e.g. `slm-checkpoints`)                  │
+│                                                                                        │
+│                                      │                                                 │
+│                                      ▼                                                 │
+│  [PHASE 3: ZERO-OVERHEAD EVALUATION ON KAGGLE]                                         │
+│   notebooks/eval-benchmarks.ipynb                                                      │
+│   ↳ Cell 1 & 2: Pulls latest repo from GitHub (contains cached results for M1–M7)      │
+│   ↳ Cells 3–8: Instant 0.05s load from cache (SKIPS re-running M1–M7 on GPU!)          │
+│   ↳ Cell 27 (M8 Evaluation): Runs GPU evaluation ONLY for M8 across 764 tasks          │
+│   ↳ Cell 29 (Master Comparison): Dynamically synthesizes all 8 models,                 │
+│      generates Radar Chart, Degradation Curves, Heatmap, and Publication LaTeX table!  │
+│                                                                                        │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Option C: Full Evaluation on Reduction Ladder Suite
-Once trained, evaluate the model across all 764 benchmark tasks using `notebooks/eval-benchmarks.ipynb`:
-```bash
-python -m src.evaluation.evaluator \
-    --adapter checkpoints/s3_grpo_final \
-    --output results/M8_hybrid_s3_grpo \
-    --device cuda
-```
+### Phase 1: Local QLoRA Training on Laptop (RTX 3070 Ti)
+
+1. **Launch VS Code & Open the Notebook:**
+   Open [`notebooks/arm_05_sego_grpo.ipynb`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/notebooks/arm_05_sego_grpo.ipynb).
+2. **Select the Active Kernel:**
+   In the top-right corner of VS Code, click the kernel selector and choose **`unsloth_env`** (this environment is verified to have CUDA enabled with `bitsandbytes` and `torch 2.x`).
+3. **Execute the Cells:**
+   - **Cell 1 (Environment Setup):** Automatically resolves `REPO_ROOT` to `c:\Users\Lenovo\Downloads\Reasoning\reo`, verifies that CUDA is active, and reports the `NVIDIA GeForce RTX 3070 Ti Laptop GPU`.
+   - **Cell 2 (Task Loading):** Ingests 400 held-out tasks across $L_1$ (Subtle), $L_3$ (Creative), $L_4$ (Difficult), and $L_5$ (Combine) from `data/ladder/`.
+   - **Cell 3 (Dry-Run Verification):** Tests `S3RewardEngine` on a sample canonical task to verify that test execution, AST node extraction, and zero-bloat scoring operate cleanly without errors.
+   - **Cell 4 (500-Step Optimization Loop):** Runs `S3GRPOTrainer` for 500 optimization steps. For each step:
+     - Formats prompt with system instructions.
+     - Generates $G=4$ rollouts (max 384 tokens).
+     - Verifies isolated assertion contracts in the sandbox.
+     - Computes AST node bloat $\Omega_{\text{AST}}$ and modulated SEGO reward.
+     - Normalizes group relative advantage $\hat{A}_i$.
+     - Executes micro-batched backpropagation with gradient accumulation = 2.
+     - Automatically saves intermediate checkpoints every 100 steps and writes the final LoRA adapter to `checkpoints/s3_grpo_final/`.
+   - **Cell 5 (Training Dynamics Plot):** Plots Policy Loss, SEGO Reward, Stepwise Process Credit, and AST Tree Bloat ($\Omega_{\text{AST}}$), saving the final publication figure to `results/s3_grpo_training_dynamics.png`.
+
+---
+
+### Phase 2: Checkpoint Packaging & Kaggle Upload
+
+Once Phase 1 completes:
+1. The trained adapter will be located in:
+   ```
+   checkpoints/s3_grpo_final/
+   ├── adapter_config.json
+   ├── adapter_model.safetensors
+   ├── tokenizer_config.json
+   ├── vocab.json
+   └── tokenizer.json
+   ```
+   *Total footprint is lightweight (~75 MB).*
+2. **Packaging:**
+   Compress `s3_grpo_final` into a zip archive (or run `python scripts/prepare_kaggle_upload.py`).
+3. **Upload to Kaggle:**
+   Upload the zip file to your existing Kaggle dataset (e.g., `slm-checkpoints`) or as a new private dataset.
+
+---
+
+### Phase 3: Zero-Overhead Evaluation on Kaggle (`notebooks/eval-benchmarks.ipynb`)
+
+1. Open [`notebooks/eval-benchmarks.ipynb`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/notebooks/eval-benchmarks.ipynb) on Kaggle with **GPU T4** or **P100** enabled.
+2. **Execute the Cells:**
+   - **Cell 1:** Clones/pulls the latest repository from GitHub. Because the repository already contains completed evaluation reports for **M1 through M7** in `results/`, all historical data is immediately available.
+   - **Cells 3–8 (Models M1 to M7):** Each cell executes `if report_path.exists() and not FORCE_RERUN:` and immediately loads the cached report in **0.05 seconds**, completely skipping GPU re-computation!
+   - **Cell 27 (Model M8 — SEGO-GRPO):** Detects `checkpoints/s3_grpo_final`, loads the 4-bit NF4 base model, attaches the M8 LoRA adapter, and executes the full 764-task evaluation across all 7 rungs ($L_0$ to $L_5$ + Ctrl LiveCodeBench).
+   - **Cell 28:** Confirms M8 standings and frees VRAM.
+   - **Cell 29 (Master Comparison & Deliverables):** Auto-discovers all 8 models, updates `results/master_comparison_table.csv`, generates the 4 multi-model publication charts (`fig1` to `fig4`), formats the final LaTeX table, and outputs `evaluation_results.zip` with a direct download link.
 
 ---
 
