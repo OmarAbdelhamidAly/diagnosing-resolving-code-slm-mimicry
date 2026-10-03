@@ -43,7 +43,7 @@ class S3GRPOTrainer:
         w_step: float = 0.50,
         w_ast: float = 0.30,
         w_inv: float = 0.20,
-        w_parsimony: float = 0.15,
+        w_parsimony: float = 0.20,
     ):
         self.settings = get_settings()
         self.model_name = model_name or self.settings.models.student_model
