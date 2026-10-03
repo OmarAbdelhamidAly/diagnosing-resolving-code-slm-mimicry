@@ -37,11 +37,13 @@ _DEFAULT_FILES: Dict[str, str] = {
     "L3":   "L3_evoeval_creative.jsonl",
     "L4":   "L4_evoeval_difficult.jsonl",
     "L5":   "L5_evoeval_combine.jsonl",
-    "Ctrl": "Ctrl_livecode_lite.jsonl",   # may not exist yet — handled gracefully
+    "Ctrl":      "Ctrl_livecode_lite.jsonl",   # 100 tasks (LiveCodeBench Lite)
+    "Ctrl_Full": "Ctrl_livecode_full.jsonl",   # 1055 tasks (LiveCodeBench Full)
 }
 
 # Ordered list for iteration (Ctrl last)
 LEVEL_ORDER = ["L0", "L1", "L2", "L3", "L4", "L5", "Ctrl"]
+ALL_LEVELS = ["L0", "L1", "L2", "L3", "L4", "L5", "Ctrl", "Ctrl_Full"]
 
 
 class BenchmarkRegistry:
@@ -80,7 +82,7 @@ class BenchmarkRegistry:
 
     def available_levels(self) -> List[str]:
         """Return levels that were successfully loaded (have ≥1 task)."""
-        return [lvl for lvl in LEVEL_ORDER if self._tasks.get(lvl)]
+        return [lvl for lvl in ALL_LEVELS if self._tasks.get(lvl)]
 
     def task_counts(self) -> Dict[str, int]:
         """Return a dict of level → task count for all available levels."""
@@ -89,11 +91,12 @@ class BenchmarkRegistry:
     def integrity_report(self) -> str:
         """Human-readable integrity summary for notebook display."""
         lines = ["BenchmarkRegistry — Integrity Report", "=" * 40]
-        for lvl in LEVEL_ORDER:
+        report_levels = [lvl for lvl in ALL_LEVELS if lvl in LEVEL_ORDER or self._tasks.get(lvl)]
+        for lvl in report_levels:
             count = len(self._tasks.get(lvl, []))
             path = self._data_dir / self._file_map.get(lvl, "")
             status = "[OK]" if count > 0 else "[MISSING]"
-            lines.append(f"  {lvl:<6}  {count:>5} tasks   {status}   {path.name}")
+            lines.append(f"  {lvl:<10}  {count:>5} tasks   {status}   {path.name}")
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
