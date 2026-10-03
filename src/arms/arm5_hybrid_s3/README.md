@@ -1,6 +1,8 @@
-# Arm 5: $S^3$-GRPO — Structural, Stepwise & Invariant Policy Optimization
+# Arm 5: SEGO-GRPO ($S^3$-GRPO) — Syntactic-Execution Gated Policy Optimization
 
 [![Base Model](https://img.shields.io/badge/Base_Model-Qwen2.5--Coder--1.5B--Instruct-0288D1?style=flat-square)](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct)
+[![Method](https://img.shields.io/badge/Method-SEGO--GRPO_(Flagship)-D81B60?style=flat-square)](src/arms/arm5_hybrid_s3/)
+[![Architecture](https://img.shields.io/badge/Architecture-100%25_Decoupled_%26_Self--Contained-00897B?style=flat-square)](src/arms/arm5_hybrid_s3/)
 [![Quantization](https://img.shields.io/badge/Quantization-4bit_NF4_QLoRA-00C853?style=flat-square)](https://github.com/TimDettmers/bitsandbytes)
 [![LoRA Rank](https://img.shields.io/badge/LoRA-r%3D16_%CE%B1%3D32-7B2FBE?style=flat-square)](https://github.com/huggingface/peft)
 [![VRAM Budget](https://img.shields.io/badge/Hardware-8GB_RTX_3070_%2F_Kaggle_T4-FB8C00?style=flat-square)](https://www.nvidia.com/)
@@ -10,7 +12,7 @@
 > **Authors:** Omar Abdelhamid, Nour Walid  
 > **Supervisor:** Dr. Ghada Soliman  
 > **Research Affiliation:** Orange Innovation Labs — AI Research & Advanced Innovation Division  
-> **Model Identifier:** `M8_hybrid_s3_grpo`  
+> **Method Identifier:** `SEGO-GRPO` / `M8_sego_grpo`  
 > **Checkpoint Target:** `checkpoints/s3_grpo_final/`  
 > **Target Conferences:** NeurIPS / ICLR / ICSE / ACL (Code Intelligence & LLM Reasoning Tracks)
 
@@ -21,9 +23,9 @@
 1. [Executive Summary & Core Scientific Contribution](#1-executive-summary--core-scientific-contribution)
 2. [The Empirical Motivation: Unsolved Research Gap from 5,348 Trials](#2-the-empirical-motivation-unsolved-research-gap-from-5348-trials)
 3. [Mathematical Formulation & Gradient Derivation](#3-mathematical-formulation--gradient-derivation)
-4. [Algorithm Pseudocode ($S^3$-GRPO)](#4-algorithm-pseudocode-s3-grpo)
+4. [Algorithm Pseudocode (SEGO-GRPO)](#4-algorithm-pseudocode-sego-grpo)
 5. [Academic Literature Grounding & Theoretical Defensibility](#5-academic-literature-grounding--theoretical-defensibility)
-6. [Clean Codebase Architecture & File Mapping](#6-clean-codebase-architecture--file-mapping)
+6. [Clean Codebase Architecture & File Mapping (100% Decoupled)](#6-clean-codebase-architecture--file-mapping)
 7. [Hyperparameter Calibration & 8 GB VRAM Envelope](#7-hyperparameter-calibration--8-gb-vram-envelope)
 8. [Step-by-Step Training & Reproduction Guide](#8-step-by-step-training--reproduction-guide)
 9. [Ablation Study Protocol & Expected Empirical Impact](#9-ablation-study-protocol--expected-empirical-impact)
@@ -179,13 +181,15 @@ for step in range(1, NUM_STEPS + 1):
 
 ## 6. Clean Codebase Architecture & File Mapping
 
-In strict accordance with Clean Architecture principles, all domain logic is isolated and decoupled:
+In strict accordance with Clean Architecture and modular encapsulation principles, **Arm 5 (SEGO-GRPO) is 100% self-contained and decoupled**. It contains its own dedicated engines and has **zero dependencies on other model directories** (`arm1` through `arm4`). Deleting or modifying other arm folders will not affect Arm 5 in any way.
 
 ```
 src/arms/arm5_hybrid_s3/
-├── __init__.py               # Exports S3RewardEngine and S3GRPOTrainer (lazy GPU imports)
+├── __init__.py               # Package interface exposing S3RewardEngine & S3GRPOTrainer
 ├── reward_engine.py          # SEGO multi-objective reward engine (AST node bloat & execution gating)
 ├── trainer.py                # S3GRPOTrainer: 4-bit NF4 QLoRA, micro-batched rollout policy updates
+├── ast_engine.py             # Dedicated AST normalizer, structural signature extractor & similarity
+├── step_verifier.py          # Dedicated stepwise assertion contract instrumentor & verifier
 └── README.md                 # Complete publication-grade specification (this file)
 
 Supporting Infrastructure:
@@ -198,9 +202,10 @@ Supporting Infrastructure:
 ### Component Symbol Index:
 - [`S3RewardEngine`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm5_hybrid_s3/reward_engine.py#L35): Computes $\mathcal{R}_{\text{SEGO}}$ with execution gating and AST node bloat detection.
 - [`S3GRPOTrainer`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm5_hybrid_s3/trainer.py#L35): Implements group rollout generation ($G=4$), forward passes, clipping, and checkpoint persistence.
-- [`StepwiseContractVerifier`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm4_step_rlvr/verifier.py#L77): Reused for zero-leakage subprocess assertion execution.
-- [`simAST`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/ast_engine.py#L48): Normalized AST tree matching algorithm.
-- [`get_ast_signature`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm3_ast_rl/ast_engine.py#L33): Computes depth-first sequence of normalized AST node types for true structural bloat calculation.
+- [`StepwiseContractVerifier`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm5_hybrid_s3/step_verifier.py#L77): Dedicated subprocess assertion contract evaluator for dense process credit.
+- [`simAST`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm5_hybrid_s3/ast_engine.py#L66): Normalized AST tree matching algorithm with syntax error safety.
+- [`get_ast_signature`](file:///c:/Users/Lenovo/Downloads/Reasoning/reo/src/arms/arm5_hybrid_s3/ast_engine.py#L34): Computes depth-first sequence of normalized AST node types for true structural bloat calculation.
+
 
 ---
 

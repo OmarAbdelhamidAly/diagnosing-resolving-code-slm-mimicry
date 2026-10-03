@@ -593,8 +593,8 @@ The complete 7-model Reduction Ladder evaluation was executed to 100% completion
    Stepwise contract verification delivers near-perfect accuracy across multi-step algorithmic challenges (99.0% on L1, 100% on L3, 97.0% on L4) with an AUC of **97.8%** and 35% lower token bloat than standard GRPO.
 5. **Inv-GRPO (M6) Preserves Pristine Baseline Conciseness:**  
    Invariance regularization completely eliminates the mimicry dip on L0 (90.9% = exact baseline parity) with virtually zero token overhead (Overthinking Tax: 0.647 vs baseline 0.635).
-6. **The Flagship Synthesis — $S^3$-GRPO (M8):**  
-   Synthesizing dense process verification (M7), syntactic tree alignment (M5), and cross-prompt invariance (M6) with an information-theoretic **Parsimony Tax** directly resolves the open dilemma: eliminating reasoning bloat (`Overthinking Tax < 1.0`) while maximizing OOD generalization (>10.0%) and achieving Pareto-optimal accuracy across all ladder rungs. See full specification in [`src/arms/arm5_hybrid_s3/README.md`](src/arms/arm5_hybrid_s3/README.md).
+6. **The Flagship Synthesis — SEGO-GRPO / $S^3$-GRPO (M8):**  
+   Synthesizing dense process verification (M7), syntactic tree alignment (M5), and cross-prompt invariance (M6) with an execution-gated **AST Node Parsimony Regularizer ($\Omega_{\text{AST}}$)** directly resolves the open dilemma: eliminating reasoning bloat (`Overthinking Tax < 1.0`) while maximizing OOD generalization (>10.0%) and preventing the "premature disengagement" failure mode (Yeo et al., 2025). The implementation is **100% self-contained and decoupled** in [`src/arms/arm5_hybrid_s3/`](src/arms/arm5_hybrid_s3/). See full publication-grade specification in [`src/arms/arm5_hybrid_s3/README.md`](src/arms/arm5_hybrid_s3/README.md).
 
 ---
 
