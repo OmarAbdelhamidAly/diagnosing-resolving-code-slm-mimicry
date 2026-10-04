@@ -207,6 +207,7 @@ class S3GRPOTrainer:
         tasks: List[Dict[str, Any]],
         num_steps: int = 500,
         grad_accum_steps: int = 2,
+        save_steps: int = 500,
     ) -> Dict[str, List[float]]:
         """Executes full S³-GRPO multi-objective training loop.
 
@@ -214,6 +215,7 @@ class S3GRPOTrainer:
             tasks: List of task dicts (prompts, tests, entry_points, and canonical solutions).
             num_steps: Total policy optimization steps.
             grad_accum_steps: Gradient accumulation steps.
+            save_steps: Frequency of intermediate checkpoints.
 
         Returns:
             Dictionary containing logged training metrics.
@@ -311,8 +313,8 @@ class S3GRPOTrainer:
                 "Loss": f"{step_loss:.3f}",
             })
 
-            # Checkpoint saving every 100 steps
-            if step % 100 == 0 or step == num_steps:
+            # Checkpoint saving every save_steps
+            if step % save_steps == 0 or step == num_steps:
                 ckpt_dir = os.path.join(self.output_dir, f"checkpoint-{step}")
                 self.model.save_pretrained(ckpt_dir)
                 self.tokenizer.save_pretrained(ckpt_dir)
