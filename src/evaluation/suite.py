@@ -134,9 +134,7 @@ class EvaluationSuite:
         )
 
         # ── per-level evaluation ──────────────────────────────────────
-        for level_key in LEVEL_ORDER:
-            if level_key not in levels_to_run:
-                continue
+        for level_key in levels_to_run:
             tasks = self.registry.get_tasks(level_key)
             if not tasks:
                 print(f"[SKIP] {level_key}: no tasks available")
@@ -323,6 +321,7 @@ class EvaluationSuite:
         # We attach them as dynamic attributes so the reporter can access them
         suite._degradation_slope = M.compute_degradation_slope(p1_map)   # type: ignore[attr-defined]
         suite._ood_score = _p1("Ctrl") if _p1("Ctrl") is not None else None  # type: ignore[attr-defined]
+        suite._ood_full_score = _p1("Ctrl_Full") if _p1("Ctrl_Full") is not None else None  # type: ignore[attr-defined]
 
         # Overthinking Tax (uses average token length across all L0-L5 levels)
         all_avg_tokens = []
@@ -340,6 +339,7 @@ class EvaluationSuite:
         # Attach extra metrics computed in _compute_suite_metrics
         data["degradation_slope"] = getattr(suite, "_degradation_slope", None)
         data["ood_score"] = getattr(suite, "_ood_score", None)
+        data["ood_full_score"] = getattr(suite, "_ood_full_score", None)
         data["overthinking_tax"] = getattr(suite, "_overthinking_tax", None)
         # Stamp harness version so notebooks can detect stale cached reports
         data["harness_version"] = HARNESS_VERSION
