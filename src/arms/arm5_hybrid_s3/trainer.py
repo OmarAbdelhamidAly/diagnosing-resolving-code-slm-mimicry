@@ -87,23 +87,30 @@ class S3GRPOTrainer:
             else (torch.float16 if torch.cuda.is_available() else torch.float32)
         )
 
+        base_model = None
         if use_quant:
             print("[S³-GRPO] Loading 4-bit NF4 quantized model...")
-            bnb_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_compute_dtype=torch_dtype,
-                bnb_4bit_use_double_quant=True,
-            )
-            base_model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                quantization_config=bnb_config,
-                device_map="auto",
-                trust_remote_code=True,
-            )
-            base_model = prepare_model_for_kbit_training(base_model, use_gradient_checkpointing=True)
-        else:
-            print(f"[S³-GRPO] Loading UNQUANTIZED native model ({torch_dtype})...")
+            try:
+                bnb_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch_dtype,
+                    bnb_4bit_use_double_quant=True,
+                )
+                base_model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    quantization_config=bnb_config,
+                    device_map="auto",
+                    trust_remote_code=True,
+                )
+                base_model = prepare_model_for_kbit_training(base_model, use_gradient_checkpointing=True)
+            except (ImportError, Exception) as e:
+                print(f"[S³-GRPO] ⚠️ 4-bit quantization unavailable ({e}).")
+                print(f"[S³-GRPO] Falling back to native {torch_dtype} precision (Fits easily in 3.5GB VRAM for 1.5B model)...")
+                base_model = None
+
+        if base_model is None:
+            print(f"[S³-GRPO] Loading native precision model ({torch_dtype})...")
             base_model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
                 torch_dtype=torch_dtype,
